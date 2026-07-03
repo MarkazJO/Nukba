@@ -1228,19 +1228,8 @@
                                         </div>
                                         <div className="p-6 space-y-4">
                                             {(() => {
-                                                // Show only this student's group lessons
-                                                const allDatesMap = {};
-                                                const groupLessons = data.lessons && data.lessons[studentGroup] ? data.lessons[studentGroup] : null;
-
-                                                if (groupLessons) {
-                                                    Object.keys(groupLessons).forEach(date => {
-                                                        allDatesMap[date] = {
-                                                            [studentGroup]: groupLessons[date]
-                                                        };
-                                                    });
-                                                }
-                                                
-                                                const sortedDates = Object.keys(allDatesMap).sort().reverse();
+                                                const groupLessons = data.lessons && data.lessons[studentGroup] ? data.lessons[studentGroup] : {};
+                                                const sortedDates = Object.keys(groupLessons).sort().reverse();
                                                 
                                                 if (sortedDates.length === 0) {
                                                     return <p className="text-slate-500 text-center py-8">لا توجد دروس مسجلة</p>;
@@ -1253,29 +1242,22 @@
                                                             <span>{date}</span>
                                                         </h3>
                                                         <div className="space-y-2 ml-6">
-                                                            {Object.keys(allDatesMap[date]).map((group) => (
-                                                                <div key={group}>
-                                                                    {allDatesMap[date][group].length > 0 && (
-                                                                        <div className="text-xs font-bold text-slate-500 mb-2">{group}</div>
-                                                                    )}
-                                                                    {allDatesMap[date][group].map((lesson, idx) => (
-                                                                        <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
-                                                                            <div className="flex items-start gap-2 mb-2">
-                                                                                <BookMarked size={12} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                                                                                <h4 className="text-xs font-bold text-slate-900">{lesson.lesson}</h4>
-                                                                            </div>
-                                                                            {lesson.notes && (
-                                                                                <div className="text-[11px] text-slate-600 ml-6 mb-1">
-                                                                                    <span className="font-bold text-slate-500">ملاحظات: </span>{lesson.notes}
-                                                                                </div>
-                                                                            )}
-                                                                            {lesson.homework && (
-                                                                                <div className="text-[11px] text-amber-800 ml-6 bg-amber-50 p-1.5 rounded">
-                                                                                    <span className="font-bold">واجب: </span>{lesson.homework}
-                                                                                </div>
-                                                                            )}
+                                                            {groupLessons[date].map((lesson, idx) => (
+                                                                <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
+                                                                    <div className="flex items-start gap-2 mb-2">
+                                                                        <BookMarked size={12} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                                        <h4 className="text-xs font-bold text-slate-900">{lesson.lesson}</h4>
+                                                                    </div>
+                                                                    {lesson.notes && (
+                                                                        <div className="text-[11px] text-slate-600 ml-6 mb-1">
+                                                                            <span className="font-bold text-slate-500">ملاحظات: </span>{lesson.notes}
                                                                         </div>
-                                                                    ))}
+                                                                    )}
+                                                                    {lesson.homework && (
+                                                                        <div className="text-[11px] text-amber-800 ml-6 bg-amber-50 p-1.5 rounded">
+                                                                            <span className="font-bold">واجب: </span>{lesson.homework}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>
