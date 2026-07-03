@@ -1172,9 +1172,28 @@
                 const sundaySessions = filteredHistory.filter(session => isSunday(session.date));
                 const weekdaySessions = filteredHistory.filter(session => !isSunday(session.date));
 
-                const totalNewPages = weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
+                const sundayReviewPages = sundaySessions.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0);
+                const totalNewPages = weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0) + sundayReviewPages;
                 const totalReviewPages = weekdaySessions.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0);
                 const totalSardNew = sundaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
+
+                // Calculate page range for new memorization
+                const newSessionsWithPages = weekdaySessions.filter(s => s.new?.start && s.new?.end);
+                const startPage = newSessionsWithPages.length > 0 
+                    ? Math.min(...newSessionsWithPages.map(s => s.new.start))
+                    : '-';
+                const endPage = newSessionsWithPages.length > 0
+                    ? Math.max(...newSessionsWithPages.map(s => s.new.end))
+                    : '-';
+
+                // Calculate page range for review
+                const reviewSessionsWithPages = weekdaySessions.filter(s => s.review?.start && s.review?.end);
+                const reviewStartPage = reviewSessionsWithPages.length > 0
+                    ? Math.min(...reviewSessionsWithPages.map(s => s.review.start))
+                    : '-';
+                const reviewEndPage = reviewSessionsWithPages.length > 0
+                    ? Math.max(...reviewSessionsWithPages.map(s => s.review.end))
+                    : '-';
 
                 const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
                 const progressPercentage = targetPages > 0 
@@ -1306,26 +1325,16 @@
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
                                     <div className="space-y-1.5">
                                         <span className="text-xs text-slate-400 font-bold block">حفظ الجديد</span>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="sm:text-lg md:text-2xl font-black text-slate-800">{totalNewPages.toFixed(1)}</span>
-                                            <span className="text-[10px] text-slate-400 font-bold">صفحة</span>
+                                        <div className="space-y-1">
+                                            <div className="text-[10px] text-slate-500 font-medium">من {startPage} إلى {endPage}</div>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="sm:text-lg md:text-2xl font-black text-slate-800">{totalNewPages.toFixed(1)}</span>
+                                                <span className="text-[10px] text-slate-400 font-bold">صفحة</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="p-3 bg-indigo-50 text-indigo-500 rounded-xl">
                                         <BookOpen size={18} />
-                                    </div>
-                                </div>
-
-                                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
-                                    <div className="space-y-1.5">
-                                        <span className="text-xs text-slate-400 font-bold block">الهدف المطلوب</span>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="sm:text-lg md:text-2xl font-black text-slate-800">{targetPages}</span>
-                                            <span className="text-[10px] text-slate-400 font-bold">صفحة هدف</span>
-                                        </div>
-                                    </div>
-                                    <div className="p-3 bg-slate-50 text-slate-500 rounded-xl">
-                                        <Calendar size={18} />
                                     </div>
                                 </div>
 
@@ -1341,6 +1350,21 @@
                                     </div>
                                 </div>
 
+                                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                    <div className="space-y-1.5">
+                                        <span className="text-xs text-slate-400 font-bold block">مراجعة</span>
+                                        <div className="space-y-1">
+                                            <div className="text-[10px] text-slate-500 font-medium">من {reviewStartPage} إلى {reviewEndPage}</div>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="sm:text-lg md:text-2xl font-black text-slate-800">{totalReviewPages.toFixed(1)}</span>
+                                                <span className="text-[10px] text-slate-400 font-bold">صفحة</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-blue-50 text-blue-500 rounded-xl">
+                                        <BookOpen size={18} />
+                                    </div>
+                                </div>
                                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
                                     <div className="space-y-1.5">
                                         <span className="text-xs text-slate-400 font-bold block">الحضور</span>
@@ -1472,37 +1496,60 @@
                                         </div>
                                         <div className="p-6 space-y-4">
                                             {(() => {
-                                                const allLessonDates = data.lessons && data.lessons[studentGroup] 
-                                                    ? Object.keys(data.lessons[studentGroup]).sort().reverse()
-                                                    : [];
+                                                // Determine which lesson groups to show
+                                                const lessonGroupsToShow = studentGroup === 'نخبة١' 
+                                                    ? ['نخبة١', 'نخبة٢']
+                                                    : ['نخبة٢'];
                                                 
-                                                if (allLessonDates.length === 0) {
+                                                // Collect all dates from visible groups
+                                                const allDatesMap = {};
+                                                lessonGroupsToShow.forEach(group => {
+                                                    if (data.lessons && data.lessons[group]) {
+                                                        Object.keys(data.lessons[group]).forEach(date => {
+                                                            if (!allDatesMap[date]) {
+                                                                allDatesMap[date] = {};
+                                                            }
+                                                            allDatesMap[date][group] = data.lessons[group][date];
+                                                        });
+                                                    }
+                                                });
+                                                
+                                                const sortedDates = Object.keys(allDatesMap).sort().reverse();
+                                                
+                                                if (sortedDates.length === 0) {
                                                     return <p className="text-slate-500 text-center py-8">لا توجد دروس مسجلة</p>;
                                                 }
                                                 
-                                                return allLessonDates.map((date) => (
+                                                return sortedDates.map((date) => (
                                                     <div key={date} className="border border-slate-200 rounded-xl p-4 space-y-3">
                                                         <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                                                             <Calendar size={14} className="text-blue-600" />
                                                             <span>{date}</span>
                                                         </h3>
                                                         <div className="space-y-2 ml-6">
-                                                            {data.lessons[studentGroup][date].map((lesson, idx) => (
-                                                                <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                                                    <div className="flex items-start gap-2 mb-2">
-                                                                        <BookMarked size={12} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                                                                        <h4 className="text-xs font-bold text-slate-900">{lesson.lesson}</h4>
-                                                                    </div>
-                                                                    {lesson.notes && (
-                                                                        <div className="text-[11px] text-slate-600 ml-6 mb-1">
-                                                                            <span className="font-bold text-slate-500">ملاحظات: </span>{lesson.notes}
-                                                                        </div>
+                                                            {Object.keys(allDatesMap[date]).map((group) => (
+                                                                <div key={group}>
+                                                                    {allDatesMap[date][group].length > 0 && (
+                                                                        <div className="text-xs font-bold text-slate-500 mb-2">{group}</div>
                                                                     )}
-                                                                    {lesson.homework && (
-                                                                        <div className="text-[11px] text-amber-800 ml-6 bg-amber-50 p-1.5 rounded">
-                                                                            <span className="font-bold">واجب: </span>{lesson.homework}
+                                                                    {allDatesMap[date][group].map((lesson, idx) => (
+                                                                        <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
+                                                                            <div className="flex items-start gap-2 mb-2">
+                                                                                <BookMarked size={12} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                                                <h4 className="text-xs font-bold text-slate-900">{lesson.lesson}</h4>
+                                                                            </div>
+                                                                            {lesson.notes && (
+                                                                                <div className="text-[11px] text-slate-600 ml-6 mb-1">
+                                                                                    <span className="font-bold text-slate-500">ملاحظات: </span>{lesson.notes}
+                                                                                </div>
+                                                                            )}
+                                                                            {lesson.homework && (
+                                                                                <div className="text-[11px] text-amber-800 ml-6 bg-amber-50 p-1.5 rounded">
+                                                                                    <span className="font-bold">واجب: </span>{lesson.homework}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
-                                                                    )}
+                                                                    ))}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -2112,7 +2159,7 @@
                                                         ? Math.min(100, Math.round((totalNewPagesInRange / targetPages) * 100)) 
                                                         : 100;
 
-                                                    const attendedDays = (student.history || []).filter(session => session.attendance?.present).length;
+                                                    const attendedDays = (student.history || []).filter(session => isDateInRange(session.date) && session.attendance?.present).length;
                                                     const expectedDays = OFFICIAL_RECITATION_DATES.filter(date => date >= startDate && date <= endDate).length;
 
                                                     return (
