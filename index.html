@@ -1228,23 +1228,17 @@
                                         </div>
                                         <div className="p-6 space-y-4">
                                             {(() => {
-                                                // Determine which lesson groups to show
-                                                const lessonGroupsToShow = studentGroup === 'نخبة١' 
-                                                    ? ['نخبة١', 'نخبة٢']
-                                                    : ['نخبة٢'];
-                                                
-                                                // Collect all dates from visible groups
+                                                // Show only this student's group lessons
                                                 const allDatesMap = {};
-                                                lessonGroupsToShow.forEach(group => {
-                                                    if (data.lessons && data.lessons[group]) {
-                                                        Object.keys(data.lessons[group]).forEach(date => {
-                                                            if (!allDatesMap[date]) {
-                                                                allDatesMap[date] = {};
-                                                            }
-                                                            allDatesMap[date][group] = data.lessons[group][date];
-                                                        });
-                                                    }
-                                                });
+                                                const groupLessons = data.lessons && data.lessons[studentGroup] ? data.lessons[studentGroup] : null;
+
+                                                if (groupLessons) {
+                                                    Object.keys(groupLessons).forEach(date => {
+                                                        allDatesMap[date] = {
+                                                            [studentGroup]: groupLessons[date]
+                                                        };
+                                                    });
+                                                }
                                                 
                                                 const sortedDates = Object.keys(allDatesMap).sort().reverse();
                                                 
