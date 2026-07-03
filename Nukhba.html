@@ -1,0 +1,2809 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة متابعة التسميع والحفظ الذكية</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- React & Babel UMD CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        /* Custom smooth scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F5F9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // ==========================================
+        // INDEPENDENT SVG COMPONENT ICONS 
+        // ==========================================
+        const BookOpen = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </svg>
+        );
+
+        const BookMarked = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                <path d="m9 9.5 2 2 4-4" />
+            </svg>
+        );
+
+        const TrendingUp = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
+            </svg>
+        );
+
+        const Award = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="8" r="7" />
+                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+            </svg>
+        );
+
+        const Search = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+        );
+
+        const Calendar = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+        );
+
+        const Filter = ({ size = 14, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+        );
+
+        const ArrowUpDown = ({ size = 14, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <polyline points="19 12 12 19 5 12" />
+                <polyline points="19 8 12 1 5 8" />
+            </svg>
+        );
+
+        const LogOut = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+        );
+
+        const Plus = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+        );
+
+        const Code = ({ size = 14, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+            </svg>
+        );
+
+        const User = ({ size = 18, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+            </svg>
+        );
+
+        const Trash2 = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" y2="17" x2="10" />
+                <line x1="14" y1="11" y2="17" x2="14" />
+            </svg>
+        );
+
+        const X = ({ size = 18, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        );
+
+        const CheckCircle2 = ({ size = 18, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+        );
+
+        const Sparkles = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707-.707" />
+            </svg>
+        );
+
+        const Check = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="20 6 9 17 4 12" />
+            </svg>
+        );
+
+        const Info = ({ size = 14, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+        );
+
+        const Sliders = ({ size = 14, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="4" y1="21" x2="4" y2="14" />
+                <line x1="4" y1="10" x2="4" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12" y2="3" />
+                <line x1="20" y1="21" x2="20" y2="16" />
+                <line x1="20" y1="12" x2="20" y2="3" />
+                <line x1="1" y1="14" x2="7" y2="14" />
+                <line x1="9" y1="8" x2="15" y2="8" />
+                <line x1="17" y1="16" x2="23" py-16 />
+            </svg>
+        );
+
+        const RefreshCw = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="23 4 23 10 19 10" />
+                <polyline points="1 20 1 14 5 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+        );
+
+        const AlertTriangle = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+        );
+
+        const HelpCircle = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+        );
+
+        const Copy = ({ size = 13, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+        );
+
+        const ArrowLeft = ({ size = 16, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+            </svg>
+        );
+
+
+        // ==========================================
+        // SYSTEM LOGISTICS CONSTANTS (GLOBAL SCOPE)
+        // ==========================================
+        const OFFICIAL_RECITATION_DATES = [
+            "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-25", "2026-06-28", "2026-06-30",
+            "2026-07-02", "2026-07-05", "2026-07-07", "2026-07-09", "2026-07-12", "2026-07-14",
+            "2026-07-16", "2026-07-19", "2026-07-21", "2026-07-23", "2026-07-26", "2026-07-28",
+            "2026-07-30", "2026-08-02", "2026-08-04", "2026-08-06", "2026-08-09", "2026-08-11",
+            "2026-08-13", "2026-08-16", "2026-08-18", "2026-08-20"
+        ];
+
+        const FIRST_THREE_DATES = ["2026-06-21", "2026-06-22", "2026-06-23"];
+
+        // FIXED DEFINITION: CORRECTLY DEFINING isSunday (WITH 21st JUNE JADID EXCEPTION) GLOBALLY
+        const isSunday = (dateStr) => {
+            if (!dateStr) return false;
+            if (dateStr === "2026-06-21") return false; // June 21st is standard/Jadid, not Sard
+            const date = new Date(dateStr);
+            return date.getDay() === 0;
+        };
+
+        const GRADE_VALUES = {
+            "مقبول": 25,
+            "جيد": 50,
+            "جيد جدًا": 75,
+            "ممتاز": 100
+        };
+
+        const VALUE_TO_GRADE = {
+            25: "مقبول",
+            50: "جيد",
+            75: "جيد جدًا",
+            100: "ممتاز"
+        };
+
+        const getGradePillClass = (grade) => {
+            if (!grade) return "bg-slate-50 text-slate-600 border border-slate-100";
+            const trimmed = grade.trim();
+            switch (trimmed) {
+                case "ممتاز":
+                    return "bg-emerald-50 text-emerald-700 border border-emerald-100/80";
+                case "جيد جدًا":
+                    return "bg-blue-50 text-blue-700 border border-blue-100/80";
+                case "جيد":
+                    return "bg-sky-50 text-sky-700 border border-sky-100/80";
+                case "مقبول":
+                    return "bg-amber-50 text-amber-700 border border-amber-100/80";
+                default:
+                    return "bg-slate-50 text-slate-600 border border-slate-100";
+            }
+        };
+
+        const WARNING_TYPES = ["حفظ", "إقراء", "سلوك", "غياب"];
+
+        const getWarningStyle = (type) => {
+            switch (type) {
+                case "حفظ":   return { pill: "bg-amber-50 text-amber-700 border-amber-200",   kpi: "bg-amber-50 text-amber-500",   label: "تحذيرات الحفظ" };
+                case "إقراء": return { pill: "bg-orange-50 text-orange-700 border-orange-200",  kpi: "bg-orange-50 text-orange-500",  label: "تحذيرات الإقراء" };
+                case "سلوك": return { pill: "bg-purple-50 text-purple-700 border-purple-200",  kpi: "bg-purple-50 text-purple-500",  label: "تحذيرات السلوك" };
+                case "غياب": return { pill: "bg-red-50 text-red-700 border-red-200",           kpi: "bg-red-50 text-red-500",        label: "إجمالي الغياب" };
+                default:      return { pill: "bg-slate-50 text-slate-600 border-slate-200",    kpi: "bg-slate-50 text-slate-400",   label: type };
+            }
+        };
+
+        // Mathematical rounding logic for single average grades
+        const calculateMeanGrade = (sessions, category) => {
+            const activeGrades = sessions
+                .map(s => s[category]?.grade)
+                .filter(Boolean);
+
+            if (activeGrades.length === 0) return null;
+
+            let sum = 0;
+            let count = 0;
+
+            activeGrades.forEach(gradeStr => {
+                const trimmed = gradeStr.trim();
+                if (GRADE_VALUES[trimmed] !== undefined) {
+                    sum += GRADE_VALUES[trimmed];
+                    count++;
+                }
+            });
+
+            if (count === 0) return null;
+
+            const mean = sum / count;
+
+            let roundedValue = 100;
+            if (mean < 37.5) {
+                roundedValue = 25;
+            } else if (mean < 62.5) {
+                roundedValue = 50;
+            } else if (mean < 87.5) {
+                roundedValue = 75;
+            } else {
+                roundedValue = 100;
+            }
+
+            return VALUE_TO_GRADE[roundedValue];
+        };
+
+        const initialData = {
+            "generatedAt": "2026-07-02T09:01:40.323Z",
+            "version": 1,
+            "students": [
+                {
+                    "id": 1,
+                    "name": "أمير أبو خاطر",
+                    "group": "نخبة١",
+                    "attendance": "حضر 27 / 27",
+                    "history": [
+                        {
+                            "date": "2026-06-21",
+                            "new": {
+                                "type": "range",
+                                "raw": "306-307",
+                                "start": 306,
+                                "end": 307,
+                                "pages": 2,
+                                "grade": "ممتاز",
+                                "sheetPages": 2
+                            },
+                            "review": {
+                                "type": "range",
+                                "raw": "2 - 5",
+                                "start": 2,
+                                "end": 5,
+                                "pages": 4,
+                                "grade": "ممتاز",
+                                "sheetPages": 4
+                            }
+                        },
+                        {
+                            "date": "2026-06-23",
+                            "new": {
+                                "type": "range",
+                                "raw": "308-311",
+                                "start": 308,
+                                "end": 311,
+                                "pages": 4,
+                                "grade": "ممتاز",
+                                "sheetPages": 4
+                            },
+                            "review": {
+                                "type": "range",
+                                "raw": "6 -11",
+                                "start": 6,
+                                "end": 11,
+                                "pages": 6,
+                                "grade": "ممتاز",
+                                "sheetPages": 6
+                            }
+                        },
+                        {
+                            "date": "2026-06-25",
+                            "new": {
+                                "type": "range",
+                                "raw": "312-314",
+                                "start": 312,
+                                "end": 314,
+                                "pages": 3,
+                                "grade": "ممتاز",
+                                "sheetPages": 3
+                            },
+                            "review": {
+                                "type": "range",
+                                "raw": "12-17",
+                                "start": 12,
+                                "end": 17,
+                                "pages": 6,
+                                "grade": "جيد",
+                                "sheetPages": 6
+                            }
+                        }
+                    ],
+                    "notes": "يتكلم كثيراً أثناء الدرس، يحتاج متابعة أقرب",
+                    "warnings": {
+                        "حفظ": 0,
+                        "إقراء": 1,
+                        "سلوك": 2,
+                        "غياب": 0
+                    }
+                },
+                {
+                    "id": 2,
+                    "name": "حذيفة أبو خاطر",
+                    "group": "نخبة٢",
+                    "attendance": "حضر 25 / 27",
+                    "history": [
+                        {
+                            "date": "2026-06-21",
+                            "new": {
+                                "type": "range",
+                                "raw": "305-306",
+                                "start": 305,
+                                "end": 306,
+                                "pages": 2,
+                                "grade": "جيد جدًا",
+                                "sheetPages": 2
+                            },
+                            "review": null
+                        },
+                        {
+                            "date": "2026-06-23",
+                            "new": {
+                                "type": "range",
+                                "raw": "307-308",
+                                "start": 307,
+                                "end": 308,
+                                "pages": 2,
+                                "grade": "ممتاز",
+                                "sheetPages": 2
+                            },
+                            "review": {
+                                "type": "list",
+                                "raw": "7-8-9-10",
+                                "list": [7, 8, 9, 10],
+                                "pages": 4,
+                                "grade": "جيد",
+                                "sheetPages": 4
+                            }
+                        },
+                        {
+                            "date": "2026-06-25",
+                            "new": {
+                                "type": "range",
+                                "raw": "309-310",
+                                "start": 309,
+                                "end": 310,
+                                "pages": 2,
+                                "grade": "جيد جدًا",
+                                "sheetPages": 2
+                            },
+                            "review": null
+                        },
+                        {
+                            "date": "2026-06-28",
+                            "new": {
+                                "type": "range",
+                                "raw": "311-312",
+                                "start": 311,
+                                "end": 312,
+                                "pages": 2,
+                                "grade": "جيد جدًا",
+                                "sheetPages": 2
+                            },
+                            "review": null
+                        }
+                    ],
+                    "notes": "نسي واجبه في الجلسة الأخيرة",
+                    "warnings": {
+                        "حفظ": 0,
+                        "إقراء": 0,
+                        "سلوك": 0,
+                        "غياب": 2
+                    }
+                },
+                {
+                    "id": 3,
+                    "name": "آدم طوالبة",
+                    "group": "نخبة٢",
+                    "attendance": "حضر 2 / 27",
+                    "history": [
+                        {
+                            "date": "2026-06-29",
+                            "new": {
+                                "type": "range",
+                                "raw": "483-484",
+                                "start": 483,
+                                "end": 484,
+                                "pages": 2.0,
+                                "grade": "ممتاز",
+                                "sheetPages": 2
+                            },
+                            "review": null
+                        }
+                    ],
+                    "warnings": {
+                        "حفظ": 0,
+                        "إقراء": 0,
+                        "سلوك": 0,
+                        "غياب": 5
+                    }
+                },
+                {
+                    "id": 4,
+                    "name": "آدم ناصر جرادة",
+                    "group": "نخبة١",
+                    "attendance": "حضر 1 / 27",
+                    "history": [
+                        {
+                            "date": "2026-06-29",
+                            "new": {
+                                "type": "range",
+                                "raw": "104-107",
+                                "start": 104,
+                                "end": 107,
+                                "pages": 4.0,
+                                "grade": "ممتاز",
+                                "sheetPages": 4
+                            },
+                            "review": {
+                                "type": "range",
+                                "raw": "582-586",
+                                "start": 582,
+                                "end": 586,
+                                "pages": 5.0,
+                                "grade": "ممتاز",
+                                "sheetPages": 5
+                            }
+                        }
+                    ],
+                    "warnings": {
+                        "حفظ": 1,
+                        "إقراء": 0,
+                        "سلوك": 0,
+                        "غياب": 3
+                    }
+                },
+                {
+                    "id": 5,
+                    "name": "أسامة غزلان",
+                    "group": "نخبة١",
+                    "attendance": "حضر 2 / 27",
+                    "history": [
+                        {
+                            "date": "2026-06-29",
+                            "new": {
+                                "type": "range",
+                                "raw": "37-40",
+                                "start": 37,
+                                "end": 40,
+                                "pages": 4.0,
+                                "grade": null,
+                                "sheetPages": 4
+                            },
+                            "review": null
+                        }
+                    ],
+                    "warnings": {
+                        "حفظ": 0,
+                        "إقراء": 0,
+                        "سلوك": 0,
+                        "غياب": 0
+                    }
+                }
+            ],
+            "lessons": {
+                "نخبة١": {
+                    "2026-07-02": [
+                        {
+                            "lesson": "الاستهداء بالقرآن",
+                            "notes": "تم تقسيمهم لمجموعات لتدبر سورة الحشر...",
+                            "homework": ""
+                        },
+                        {
+                            "lesson": "ما يجب على الطالب في عقيدته",
+                            "notes": "إنهاء قسم العقيدة",
+                            "homework": "كراسة الاختبار يوم الأحد القادم"
+                        },
+                        {
+                            "lesson": "شرح الأربعين النووية",
+                            "notes": "إنهاء الحديث السابع والعاشر",
+                            "homework": ""
+                        }
+                    ]
+                },
+                "نخبة٢": {
+                    "2026-07-02": [
+                        {
+                            "lesson": "الاستهداء بالقرآن",
+                            "notes": "تدبر أول خمسة آيات من سورة المزمل",
+                            "homework": ""
+                        }
+                    ]
+                }
+            }
+        };
+
+
+        // ==========================================
+        // MAIN REACT APPLICATION COMPONENT
+        // ==========================================
+        function App() {
+            // Authentication & Session States
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [currentUserRole, setCurrentUserRole] = useState(null); // 'admin' | 'nokhba1' | 'nokhba2' | 'student'
+            const [loggedInStudent, setLoggedInStudent] = useState(null); // Student details object if role is student
+            const [studentLoginInput, setStudentLoginInput] = useState('');
+            const [studentLoginError, setStudentLoginError] = useState('');
+
+            // Core States
+            const [data, setData] = useState(initialData);
+            const [jsonText, setJsonText] = useState(JSON.stringify(initialData, null, 2));
+            const [jsonError, setJsonError] = useState(null);
+            const [isLoading, setIsLoading] = useState(false);
+            const [showTroubleshooting, setShowTroubleshooting] = useState(false);
+            const [fetchErrorDetail, setFetchErrorDetail] = useState('');
+            
+            // Custom Confirmation modal overlays
+            const [customConfirm, setCustomConfirm] = useState(null); // { message, onConfirm }
+
+            // App View & Filters
+            const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'editor'
+            const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+            const [searchQuery, setSearchQuery] = useState('');
+            const [selectedLevel, setSelectedLevel] = useState('all'); // Nokhba filters
+            const [sortBy, setSortBy] = useState('name-asc'); // Sorting orders
+            const [selectedStudent, setSelectedStudent] = useState(null); // Detail modal student
+            const [showAddSessionModal, setShowAddSessionModal] = useState(false);
+            const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+            const [notification, setNotification] = useState(null);
+
+            // Inclusive Date Ranges (Default sets)
+            const [startDate, setStartDate] = useState('2026-06-21');
+            const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+
+            // Form bindings (Adding sessions)
+            const [formStudentId, setFormStudentId] = useState('');
+            const [formDate, setFormDate] = useState('2026-07-02');
+            const [formNewRaw, setFormNewRaw] = useState('');
+            const [formNewPages, setFormNewPages] = useState('');
+            const [formNewGrade, setFormNewGrade] = useState('ممتاز');
+            const [formReviewRaw, setFormReviewRaw] = useState('');
+            const [formReviewPages, setFormReviewPages] = useState('');
+            const [formReviewGrade, setFormReviewGrade] = useState('ممتاز');
+
+            // Form bindings (Adding students)
+            const [newStudentName, setNewStudentName] = useState('');
+            const [newStudentGroup, setNewStudentGroup] = useState('نخبة١');
+            const [newStudentAttendance, setNewStudentAttendance] = useState('حضر 1 / 27');
+
+            // Lesson History Modal
+            const [showLessonHistory, setShowLessonHistory] = useState(false);
+            const [showLessonHistoryNokhba1, setShowLessonHistoryNokhba1] = useState(false);
+            const [showLessonHistoryNokhba2, setShowLessonHistoryNokhba2] = useState(false);
+
+            // API Cloud Fetch Sync with Robust Double-parsing
+            const loadLiveData = () => {
+                setIsLoading(true);
+                setFetchErrorDetail('');
+                
+                fetch('https://script.google.com/macros/s/AKfycbzq8-tyxptH-OAzZOvo72Y0Wa5QlF7d7Q9tvF4F00G0TTHslpdql5vilyyFQod3rygP/exec')
+                    .then(response => {
+                        if (!response.ok) throw new Error(`خطأ بالطلب البرمجي: ${response.status}`);
+                        return response.text();
+                    })
+                    .then(rawText => {
+                        let parsedPayload;
+                        try {
+                            parsedPayload = JSON.parse(rawText);
+                            if (typeof parsedPayload === 'string') {
+                                parsedPayload = JSON.parse(parsedPayload);
+                            }
+                        } catch (e) {
+                            throw new Error('فشل فك صياغة كود الـ JSON المستلم.');
+                        }
+
+                        if (parsedPayload && parsedPayload.students) {
+                            console.log('🔄 Live data fetched from API:', parsedPayload);
+                            updateMainData(parsedPayload);
+                            triggerNotification('تم تحديث البيانات المباشرة بنجاح!', 'success');
+                            setFetchErrorDetail('');
+                        } else {
+                            throw new Error('صيغة كائن الـ JSON غير متوافقة.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fetch error:', error);
+                        setFetchErrorDetail(error.message || 'CORS blocker or network issue');
+                        triggerNotification('تعذر جلب البيانات. تم الاستعادة التلقائية لقاعدة البيانات الاحتياطية.', 'amber');
+                    })
+                    .finally(() => {
+                        setIsLoading(false);
+                    });
+            };
+
+
+
+            // Pull latest cloud changes automatically on bootstrap
+            useEffect(() => {
+                loadLiveData();
+            }, []);
+
+            // Log data object to console on every load/refresh
+            useEffect(() => {
+                console.log('📊 JSON Data Object Updated:', data);
+            }, [data]);
+
+            // Display floating notifications
+            const triggerNotification = (message, type = 'success') => {
+                setNotification({ message, type });
+                setTimeout(() => {
+                    setNotification(null);
+                }, 5000);
+            };
+
+            // Sync structural state changes
+            const updateMainData = (newData) => {
+                setData(newData);
+                setJsonText(JSON.stringify(newData, null, 2));
+                setJsonError(null);
+            };
+
+            // Dynamic live JSON validator
+            const handleJsonTextChange = (text) => {
+                setJsonText(text);
+                try {
+                    const parsed = JSON.parse(text);
+                    if (parsed && typeof parsed === 'object') {
+                        setData(parsed);
+                        setJsonError(null);
+                    } else {
+                        setJsonError('يجب أن يكون المدخل كائن JSON صالح.');
+                    }
+                } catch (e) {
+                    setJsonError(`خطأ في صياغة JSON: ${e.message}`);
+                }
+            };
+
+            // Reset back to system baseline fallback
+            const resetToDefault = () => {
+                setCustomConfirm({
+                    message: 'هل أنت متأكد من رغبتك في إعادة تعيين البيانات الحالية إلى البيانات الافتراضية؟ سيفقد أي تقدم غير محفوظ بالسحابة.',
+                    onConfirm: () => {
+                        updateMainData(initialData);
+                        setStartDate('2026-06-21');
+                        setEndDate('2026-07-02');
+                        setSelectedLevel('all');
+                        setShowTroubleshooting(false);
+                        triggerNotification('تمت إعادة تعيين البيانات بنجاح', 'info');
+                    }
+                });
+            };
+
+            // Inclusive range filter checker
+            const isDateInRange = (dateStr) => {
+                if (!dateStr) return false;
+                return dateStr >= startDate && dateStr <= endDate;
+            };
+
+            // Calculate student target expectation pages based on official schedule
+            const calculateTargetPages = (groupName, start, end) => {
+                let targetSum = 0;
+                OFFICIAL_RECITATION_DATES.forEach(dateStr => {
+                    if (dateStr >= start && dateStr <= end) {
+                        if (FIRST_THREE_DATES.includes(dateStr)) {
+                            if (groupName === "نخبة١") {
+                                targetSum += 2;
+                            } else if (groupName === "نخبة٢") {
+                                targetSum += 1;
+                            }
+                        } else {
+                            const dateObj = new Date(dateStr);
+                            const dayOfWeek = dateObj.getDay(); // 2 is Tuesday, 4 is Thursday
+                            if (dayOfWeek === 2 || dayOfWeek === 4) {
+                                if (groupName === "نخبة١") {
+                                    targetSum += 4;
+                                } else if (groupName === "نخبة٢") {
+                                    targetSum += 2;
+                                }
+                            }
+                        }
+                    }
+                });
+                return targetSum;
+            };
+
+            // Unique categories extracter
+            const dynamicGroupsList = useMemo(() => {
+                if (!data.students) return [];
+                const groups = data.students.map(s => s.group || s.level).filter(Boolean);
+                return [...new Set(groups)].sort();
+            }, [data.students]);
+
+            const processedStudents = useMemo(() => {
+                if (!data.students) return [];
+
+                let list = [...data.students];
+
+                if (searchQuery.trim() !== '') {
+                    list = list.filter(student => 
+                        student.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                }
+
+                if (selectedLevel !== 'all') {
+                    list = list.filter(student => (student.group || student.level) === selectedLevel);
+                }
+
+                list.sort((a, b) => {
+                    if (sortBy === 'name-asc') {
+                        return a.name.localeCompare(b.name, 'ar');
+                    }
+                    if (sortBy === 'name-desc') {
+                        return b.name.localeCompare(a.name, 'ar');
+                    }
+                    if (sortBy === 'pages-desc') {
+                        const getNewPagesInRange = (student) => {
+                            return (student.history || []).reduce((acc, session) => {
+                                if (isDateInRange(session.date)) {
+                                    return acc + (session.new?.pages || 0);
+                                }
+                                return acc;
+                            }, 0);
+                        };
+                        return getNewPagesInRange(b) - getNewPagesInRange(a);
+                    }
+                    return 0;
+                });
+
+                return list;
+            }, [data.students, searchQuery, selectedLevel, sortBy, startDate, endDate]);
+
+            // Consolidated analytical KPI stats (Filtered)
+            const overallMetrics = useMemo(() => {
+                let totalNew = 0;
+                let totalReview = 0;
+                let totalTarget = 0;
+                
+                processedStudents.forEach(student => {
+                    const studentGroup = student.group || student.level || 'نخبة١';
+                    totalTarget += calculateTargetPages(studentGroup, startDate, endDate);
+
+                    student.history?.forEach(session => {
+                        if (isDateInRange(session.date)) {
+                            if (session.new?.pages) {
+                                totalNew += parseFloat(session.new.pages);
+                            }
+                            if (session.review?.pages) {
+                                totalReview += parseFloat(session.review.pages);
+                            }
+                        }
+                    });
+                });
+
+                const targetAchieved = totalTarget > 0 ? Math.round((totalNew / totalTarget) * 100) : 0;
+                const boundedTarget = Math.min(100, Math.max(0, targetAchieved));
+
+                return {
+                    totalNew: totalNew.toFixed(1),
+                    totalReview: totalReview.toFixed(1),
+                    achievementRate: boundedTarget
+                };
+            }, [processedStudents, startDate, endDate]);
+
+            const overallWarnings = useMemo(() => {
+                const totals = { "حفظ": 0, "إقراء": 0, "سلوك": 0, "غياب": 0 };
+                processedStudents.forEach(student => {
+                    if (student.warnings) {
+                        Object.entries(student.warnings).forEach(([type, count]) => {
+                            if (totals[type] !== undefined) totals[type] += (count || 0);
+                        });
+                    }
+                });
+                return totals;
+            }, [processedStudents]);
+
+            // Role assigners
+            const handleRoleLogin = (role) => {
+                setCurrentUserRole(role);
+                setIsLoggedIn(true);
+                setStudentLoginError('');
+                setStudentLoginInput('');
+
+                if (role === 'nokhba1') {
+                    setSelectedLevel('نخبة١');
+                } else if (role === 'nokhba2') {
+                    setSelectedLevel('نخبة٢');
+                } else {
+                    setSelectedLevel('all');
+                }
+
+                triggerNotification(`مرحباً بك! تم تسجيل الدخول كـ ${role === 'admin' ? 'مشرف عام' : role === 'nokhba1' ? 'معلم نخبة ١' : 'معلم نخبة ٢'}`, 'success');
+            };
+
+            // Intelligent student identity matcher
+            const handleStudentNameLoginSubmit = (e) => {
+                e.preventDefault();
+                setStudentLoginError('');
+
+                const query = studentLoginInput.trim().toLowerCase();
+                if (!query) {
+                    setStudentLoginError('الرجاء كتابة الاسم للتمكن من الدخول.');
+                    return;
+                }
+
+                if (query === 'admin') {
+                    handleRoleLogin('admin');
+                    return;
+                }
+                if (query === 'nukba1' || query === 'nokhba1' || query === 'نخبة١' || query === 'نخبه١') {
+                    handleRoleLogin('nokhba1');
+                    return;
+                }
+                if (query === 'nukba2' || query === 'nokhba2' || query === 'نخبة٢' || query === 'نخبه٢') {
+                    handleRoleLogin('nokhba2');
+                    return;
+                }
+
+                const queryWords = query.split(/\s+/).filter(w => w.length > 0);
+
+                if (queryWords.length === 1) {
+                    const singleWord = queryWords[0];
+
+                    const firstNameMatches = data.students.filter(student => {
+                        const studentFirstName = student.name.trim().split(/\s+/)[0].toLowerCase();
+                        return studentFirstName === singleWord;
+                    });
+
+                    if (firstNameMatches.length === 1) {
+                        const matched = firstNameMatches[0];
+                        setLoggedInStudent(matched);
+                        setCurrentUserRole('student');
+                        setIsLoggedIn(true);
+                        setStudentLoginInput('');
+                        setStudentLoginError('');
+                        triggerNotification(`مرحباً بك يا ${matched.name} في بوابتك التعليمية 👋`, 'success');
+                        return;
+                    } else if (firstNameMatches.length > 1) {
+                        setStudentLoginError('يوجد أكثر من طالب بهذا الاسم الأول. الرجاء كتابة اسمك الثنائي المعتمد في الحلقة للتمييز بين السجلات.');
+                        return;
+                    }
+
+                    const fallbackMatches = data.students.filter(student => {
+                        return student.name.toLowerCase().includes(singleWord);
+                    });
+
+                    if (fallbackMatches.length === 1) {
+                        const matched = fallbackMatches[0];
+                        setLoggedInStudent(matched);
+                        setCurrentUserRole('student');
+                        setIsLoggedIn(true);
+                        setStudentLoginInput('');
+                        setStudentLoginError('');
+                        triggerNotification(`مرحباً بك يا ${matched.name} في بوابتك التعليمية 👋`, 'success');
+                        return;
+                    } else if (fallbackMatches.length > 1) {
+                        setStudentLoginError('يوجد أكثر من اسم يطابق هذه الكلمة. الرجاء كتابة الاسم الثنائي بالكامل.');
+                        return;
+                    } else {
+                        setStudentLoginError('لم نتمكن من العثور على اسم الطالب في الحلقة. يرجى التأكد من كتابة الاسم الصحيح بشكل صحيح.');
+                        return;
+                    }
+                }
+
+                const matched = data.students.find(student => {
+                    const dbName = student.name.toLowerCase();
+                    return queryWords.every(word => dbName.includes(word));
+                });
+
+                if (matched) {
+                    setLoggedInStudent(matched);
+                    setCurrentUserRole('student');
+                    setIsLoggedIn(true);
+                    setStudentLoginInput('');
+                    setStudentLoginError('');
+                    triggerNotification(`مرحباً بك يا ${matched.name} في بوابتك التعليمية 👋`, 'success');
+                } else {
+                    setStudentLoginError('لم نتمكن من العثور على اسم الطالب في الحلقة. يرجى مراجعة الصياغة والتأكد من الاسم الصحيح.');
+                }
+            };
+
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setCurrentUserRole(null);
+                setLoggedInStudent(null);
+                setSelectedStudent(null);
+                triggerNotification('تم تسجيل الخروج بنجاح. نتمنى لك يوماً سعيداً!', 'info');
+            };
+
+            const handleAddSessionSubmit = (e) => {
+                e.preventDefault();
+                if (!formStudentId) {
+                    alert('الرجاء اختيار الطالب أولاً');
+                    return;
+                }
+
+                const updatedStudents = data.students.map(student => {
+                    if (student.id === parseInt(formStudentId)) {
+                        const newSession = {
+                            date: formDate,
+                            new: formNewRaw ? {
+                                type: "range",
+                                raw: formNewRaw,
+                                start: parseInt(formNewRaw.split('-')[0]) || 0,
+                                end: parseInt(formNewRaw.split('-')[1]) || 0,
+                                pages: parseFloat(formNewPages) || 1,
+                                grade: formNewGrade || null,
+                                sheetPages: parseFloat(formNewPages) || 1
+                            } : null,
+                            review: formReviewRaw ? {
+                                type: "range",
+                                raw: formReviewRaw,
+                                start: parseInt(formReviewRaw.split('-')[0]) || 0,
+                                end: parseInt(formReviewRaw.split('-')[1]) || 0,
+                                pages: parseFloat(formReviewPages) || 1,
+                                grade: formReviewGrade || null,
+                                sheetPages: parseFloat(formReviewPages) || 1
+                            } : null
+                        };
+
+                        const existingHistory = student.history ? [...student.history] : [];
+                        return {
+                            ...student,
+                            history: [...existingHistory, newSession]
+                        };
+                    }
+                    return student;
+                });
+
+                if (formDate > endDate) {
+                    setEndDate(formDate);
+                }
+
+                updateMainData({
+                    ...data,
+                    students: updatedStudents
+                });
+
+                setFormNewRaw('');
+                setFormNewPages('');
+                setFormReviewRaw('');
+                setFormReviewPages('');
+                setShowAddSessionModal(false);
+                triggerNotification('تمت إضافة الجلسة بنجاح!');
+            };
+
+            const handleAddStudentSubmit = (e) => {
+                e.preventDefault();
+                if (!newStudentName.trim()) {
+                    alert('الرجاء إدخال اسم الطالب');
+                    return;
+                }
+
+                const nextId = data.students && data.students.length > 0 
+                    ? Math.max(...data.students.map(s => s.id)) + 1 
+                    : 1;
+
+                const newStudentObj = {
+                    id: nextId,
+                    name: newStudentName.trim(),
+                    group: newStudentGroup,
+                    level: newStudentGroup,
+                    attendance: 'حضر 1 / 27',
+                    history: []
+                };
+
+                updateMainData({
+                    ...data,
+                    students: [...(data.students || []), newStudentObj]
+                });
+
+                setNewStudentName('');
+                setShowAddStudentModal(false);
+                triggerNotification('تم إضافة الطالب الجديد لقائمة المتابعة');
+            };
+
+            // ==========================================
+            // SUB-VIEW: LOGIN SPLASH SCREEN
+            // ==========================================
+            if (!isLoggedIn) {
+                return (
+                    <div className="min-h-screen bg-[#0F172A] text-slate-100 flex items-center justify-center p-4 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+                        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
+                        
+                        <div className="max-w-md w-full relative z-10">
+                            <div className="bg-slate-900 border border-slate-800/80 rounded-[2.5rem] p-8 space-y-6 shadow-2xl">
+                                <div className="text-center space-y-3 pb-2">
+                                    <div 
+                                        className="inline-flex p-3 bg-indigo-600 rounded-3xl text-white shadow-xl shadow-indigo-600/30 select-none"
+                                    >
+                                        <BookOpen size={28} className="animate-pulse" />
+                                    </div>
+                                    <h2 className="text-2xl font-black text-white leading-tight">متابعة التسميع والحفظ</h2>
+                                    <p className="text-xs text-slate-400">لوحة المتابعة الذكية وجداول قياس الإنجاز لمجموعات النخبة</p>
+                                </div>
+
+                                <div className="border-t border-slate-800"></div>
+
+                                <form onSubmit={handleStudentNameLoginSubmit} className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-black text-slate-300 block">اكتب اسمك للوصول المباشر إلى ملف المتابعة:</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="text"
+                                                value={studentLoginInput}
+                                                onChange={(e) => setStudentLoginInput(e.target.value)}
+                                                placeholder="اكتب اسمك هنا للبدء... (مثال: أمير)"
+                                                className="w-full pl-4 pr-11 py-3 bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all text-white placeholder-slate-600"
+                                            />
+                                            <User size={18} className="absolute right-4 top-3.5 text-slate-500" />
+                                        </div>
+                                        
+                                        <p className="text-[10px] text-slate-500 font-bold leading-normal">
+                                            * يمكنك كتابة اسمك الأول فقط إذا لم يكن مكرراً في الحلقة، أو كتابة الاسم الثنائي (الاسم الأول واللقب) للتمييز الفوري وسرعة تسجيل الدخول.
+                                        </p>
+
+                                        {studentLoginError && (
+                                            <p className="text-red-400 text-xs font-bold leading-normal mt-2 flex items-start gap-1.5 p-2 bg-red-500/10 border border-red-500/20 rounded-lg animate-bounce">
+                                                <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+                                                <span>{studentLoginError}</span>
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <button 
+                                        type="submit"
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-2 mt-2 group"
+                                    >
+                                        <span>دخول مباشر للمنظومة</span>
+                                        <ArrowLeft size={16} className="transform group-hover:-translate-x-1 transition-transform" />
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================
+            // SUB-VIEW: PERSONAL STUDENT VIEW 
+            // ==========================================
+            if (currentUserRole === 'student' && loggedInStudent) {
+                const studentGroup = loggedInStudent.group || loggedInStudent.level || '---';
+                const studentHistory = loggedInStudent.history || [];
+                const filteredHistory = studentHistory.filter(session => isDateInRange(session.date));
+                
+                const sundaySessions = filteredHistory.filter(session => isSunday(session.date));
+                const weekdaySessions = filteredHistory.filter(session => !isSunday(session.date));
+
+                const totalNewPages = weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
+                const totalReviewPages = weekdaySessions.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0);
+                const totalSardNew = sundaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
+
+                const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
+                const progressPercentage = targetPages > 0 
+                    ? Math.min(100, Math.round((totalNewPages / targetPages) * 100)) 
+                    : 100;
+
+                const attendedDays = filteredHistory.filter(session => session.attendance?.present).length;
+                const expectedDays = OFFICIAL_RECITATION_DATES.filter(date => date >= startDate && date <= endDate).length;
+
+                return (
+                    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans" dir="rtl">
+                        <header className="bg-white border-b border-slate-100 px-6 py-4 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-purple-600 text-white rounded-2xl shadow-lg shadow-purple-600/10">
+                                    <User size={22} />
+                                </div>
+                                <div>
+                                    <h1 className="text-base font-black text-slate-900">بوابة الطالب الذكية</h1>
+                                    <p className="text-[10px] text-slate-400 font-medium">سجل الأداء الشخصي الحصري</p>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                            >
+                                <LogOut size={14} />
+                                <span>تسجيل الخروج</span>
+                            </button>
+                        </header>
+
+                        <main className="p-6 max-w-4xl mx-auto space-y-6">
+                            
+                            <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 space-y-4">
+                                <div>
+                                    <h2 className="sm:text-xl md:text-3xl font-black text-slate-900">{loggedInStudent.name}</h2>
+                                </div>
+
+                                {(() => {
+                                    const lessonDates = data.lessons && data.lessons[studentGroup] ? Object.keys(data.lessons[studentGroup]).sort().reverse() : [];
+                                    const newestDate = lessonDates.length > 0 ? lessonDates[0] : null;
+                                    return newestDate && (
+                                        <div className="space-y-3 pt-2 border-t border-slate-100">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-xs font-black text-slate-700 flex items-center gap-2">
+                                                    <BookOpen size={14} className="text-blue-600" />
+                                                    <span>آخر الدروس</span>
+                                                </h3>
+                                                <button
+                                                    onClick={() => setShowLessonHistory(true)}
+                                                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg transition-colors"
+                                                >
+                                                    سجل الدروس
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {data.lessons[studentGroup][newestDate].map((lesson, idx) => (
+                                                <div key={idx} className="bg-slate-50 p-4 rounded-xl border border-blue-100 hover:border-blue-200 transition-all">
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-start gap-2">
+                                                            <div className="p-1.5 bg-blue-50 rounded-lg flex-shrink-0">
+                                                                <BookMarked size={14} className="text-blue-600" />
+                                                            </div>
+                                                            <h4 className="text-xs font-black text-slate-900 leading-tight">{lesson.lesson}</h4>
+                                                        </div>
+                                                        
+                                                        {lesson.notes && (
+                                                            <div>
+                                                                <span className="text-[9px] font-bold text-slate-500 block mb-0.5">ملاحظات:</span>
+                                                                <p className="text-xs text-slate-700 bg-white p-2 rounded">{lesson.notes}</p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {lesson.homework && (
+                                                            <div className="pt-1 border-t border-slate-200">
+                                                                <span className="text-[9px] font-bold text-amber-700 block mb-0.5">واجب:</span>
+                                                                <p className="text-xs text-amber-900 bg-amber-50 p-1.5 rounded">{lesson.homework}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {loggedInStudent.notes && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <AlertTriangle size={16} className="text-blue-600" />
+                                        <h4 className="text-xs font-black text-blue-900">ملاحظات من المعلم</h4>
+                                    </div>
+                                    <p className="text-xs text-blue-800 font-medium whitespace-pre-wrap">{loggedInStudent.notes}</p>
+                                </div>
+                            )}
+
+                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+                                <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                                    <Calendar size={16} className="text-purple-600" />
+                                    <span>اختر النطاق الزمني لعرض أداء ملفك:</span>
+                                </div>
+
+                                <div className="flex items-center gap-3 px-4 py-2 bg-[#F8FAFC] border border-slate-100 rounded-xl text-xs text-slate-600">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-slate-400">من:</span>
+                                        <input 
+                                            type="date" 
+                                            value={startDate} 
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                            className="bg-transparent border-none p-0 focus:outline-none focus:ring-0 font-mono text-slate-700 cursor-pointer font-bold w-28 text-center"
+                                        />
+                                    </div>
+                                    <span className="text-slate-300">|</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-slate-400">إلى:</span>
+                                        <input 
+                                            type="date" 
+                                            value={endDate} 
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                            className="bg-transparent border-none p-0 focus:outline-none focus:ring-0 font-mono text-slate-700 cursor-pointer font-bold w-28 text-center"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                    <div className="space-y-1.5">
+                                        <span className="text-xs text-slate-400 font-bold block">حفظ الجديد</span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="sm:text-lg md:text-2xl font-black text-slate-800">{totalNewPages.toFixed(1)}</span>
+                                            <span className="text-[10px] text-slate-400 font-bold">صفحة</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-indigo-50 text-indigo-500 rounded-xl">
+                                        <BookOpen size={18} />
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                    <div className="space-y-1.5">
+                                        <span className="text-xs text-slate-400 font-bold block">الهدف المطلوب</span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="sm:text-lg md:text-2xl font-black text-slate-800">{targetPages}</span>
+                                            <span className="text-[10px] text-slate-400 font-bold">صفحة هدف</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 text-slate-500 rounded-xl">
+                                        <Calendar size={18} />
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                    <div className="space-y-1.5">
+                                        <span className="text-xs text-slate-400 font-bold block">إنجاز الحفظ</span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="sm:text-lg md:text-2xl font-black text-purple-600">{progressPercentage}%</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-purple-50 text-purple-500 rounded-xl">
+                                        <Award size={18} />
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                    <div className="space-y-1.5">
+                                        <span className="text-xs text-slate-400 font-bold block">الحضور</span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="sm:text-lg md:text-2xl font-black text-slate-800">{attendedDays}/{expectedDays}</span>
+                                            <span className="text-[10px] text-slate-400 font-bold">جلسات</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl">
+                                        <CheckCircle2 size={18} />
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                                <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                                    <Award size={16} className="text-purple-600" />
+                                    <span>ملخص جلسات سرد يوم الأحد التثبيتية</span>
+                                </h3>
+
+                                <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-100/30 flex justify-between items-center">
+                                    <span className="text-xs font-bold text-purple-700">إجمالي صفحات سرد الجديد المنجزة:</span>
+                                    <span className="font-mono font-black text-purple-800 text-sm">{totalSardNew.toFixed(1)} ص</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                                <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                                    <Sparkles size={16} className="text-indigo-500" />
+                                    <span>خط المتابعة الزمني التفصيلي ({filteredHistory.length} جلسة)</span>
+                                </h3>
+
+                                {filteredHistory.length === 0 ? (
+                                    <p className="text-center text-xs text-slate-400 py-6">لا توجد تسميعات مسجلة لملفك خلال النطاق الزمني المختار.</p>
+                                ) : (
+                                    <div className="space-y-4 relative border-r-2 border-indigo-100/60 mr-4 pr-6">
+                                        {filteredHistory.map((session, index) => {
+                                            const sunday = isSunday(session.date);
+                                            return (
+                                                <div key={index} className="relative space-y-2">
+                                                    <div className="absolute right-[-31px] top-1.5 w-4.5 h-4.5 rounded-full bg-indigo-50 border-2 border-indigo-500 flex items-center justify-center">
+                                                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-indigo-600 font-mono bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                                            {session.date}
+                                                        </span>
+                                                        {sunday && (
+                                                            <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+                                                                جلسة سرد الأحد التثبيتية
+                                                            </span>
+                                                        )}
+                                                        {session.attendance && (
+                                                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                                                                session.attendance.present 
+                                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                                                    : 'bg-red-50 text-red-700 border-red-100'
+                                                            }`}>
+                                                                {session.attendance.status}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/70">
+                                                        <div className="text-xs">
+                                                            <span className="text-slate-400 block mb-1 font-bold">الحفظ الجديد</span>
+                                                            {session.new ? (
+                                                                <div className="flex justify-between bg-white px-3 py-2 rounded-xl border border-slate-100">
+                                                                    <span className="font-bold text-slate-700 font-mono">{session.new.raw}</span>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                            {session.new.pages} ص
+                                                                        </span>
+                                                                        {session.new.grade && (
+                                                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${getGradePillClass(session.new.grade)}`}>
+                                                                                {session.new.grade}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-slate-400 italic">لم يتم تسجيل حفظ جديد في هذا اليوم</span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="text-xs">
+                                                            <span className="text-slate-400 block mb-1 font-bold">المراجعة</span>
+                                                            {session.review ? (
+                                                                <div className="flex justify-between bg-white px-3 py-2 rounded-xl border border-slate-100">
+                                                                    <span className="font-bold text-slate-700 font-mono">{session.review.raw}</span>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                            {session.review.pages} ص
+                                                                        </span>
+                                                                        {session.review.grade && (
+                                                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${getGradePillClass(session.review.grade)}`}>
+                                                                                {session.review.grade}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-slate-400 italic">لا توجد مراجعات مسجلة في هذا اليوم</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Lesson History Modal */}
+                            {showLessonHistory && (
+                                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                                        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+                                            <h2 className="text-xl font-black text-slate-900">سجل الدروس</h2>
+                                            <button
+                                                onClick={() => setShowLessonHistory(false)}
+                                                className="text-slate-500 hover:text-slate-700 text-2xl font-bold leading-none"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <div className="p-6 space-y-4">
+                                            {(() => {
+                                                const allLessonDates = data.lessons && data.lessons[studentGroup] 
+                                                    ? Object.keys(data.lessons[studentGroup]).sort().reverse()
+                                                    : [];
+                                                
+                                                if (allLessonDates.length === 0) {
+                                                    return <p className="text-slate-500 text-center py-8">لا توجد دروس مسجلة</p>;
+                                                }
+                                                
+                                                return allLessonDates.map((date) => (
+                                                    <div key={date} className="border border-slate-200 rounded-xl p-4 space-y-3">
+                                                        <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                                            <Calendar size={14} className="text-blue-600" />
+                                                            <span>{date}</span>
+                                                        </h3>
+                                                        <div className="space-y-2 ml-6">
+                                                            {data.lessons[studentGroup][date].map((lesson, idx) => (
+                                                                <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                                    <div className="flex items-start gap-2 mb-2">
+                                                                        <BookMarked size={12} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                                        <h4 className="text-xs font-bold text-slate-900">{lesson.lesson}</h4>
+                                                                    </div>
+                                                                    {lesson.notes && (
+                                                                        <div className="text-[11px] text-slate-600 ml-6 mb-1">
+                                                                            <span className="font-bold text-slate-500">ملاحظات: </span>{lesson.notes}
+                                                                        </div>
+                                                                    )}
+                                                                    {lesson.homework && (
+                                                                        <div className="text-[11px] text-amber-800 ml-6 bg-amber-50 p-1.5 rounded">
+                                                                            <span className="font-bold">واجب: </span>{lesson.homework}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                        </main>
+                    </div>
+                );
+            }
+
+            // ==========================================
+            // SUB-VIEW: MASTER ADMIN/TEACHER DASHBOARD
+            // ==========================================
+            return (
+                <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans selection:bg-indigo-500 selection:text-white">
+                    
+                    {/* Floating state actions */}
+                    {notification && (
+                        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl transition-all transform duration-300 translate-y-0 scale-100 border text-sm font-bold ${
+                            notification.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 
+                            notification.type === 'info' ? 'bg-indigo-50 text-indigo-800 border-indigo-100' : 'bg-amber-50 text-amber-800 border-amber-100'
+                        }`}>
+                            <div className={`p-1.5 rounded-lg ${notification.type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                                <CheckCircle2 size={18} />
+                            </div>
+                            <span>{notification.message}</span>
+                        </div>
+                    )}
+
+                    {customConfirm && (
+                        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[2rem] max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden p-6 space-y-4 transform transition-all animate-in zoom-in-95 duration-200">
+                                <div className="flex items-center gap-3 text-amber-600">
+                                    <AlertTriangle size={24} />
+                                    <h3 className="text-lg font-black">بحاجة لتأكيد الإجراء</h3>
+                                </div>
+                                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                                    {customConfirm.message}
+                                </p>
+                                <div className="flex justify-end gap-3 pt-2">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setCustomConfirm(null)}
+                                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all"
+                                    >
+                                        إلغاء الأمر
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => {
+                                            customConfirm.onConfirm();
+                                            setCustomConfirm(null);
+                                        }}
+                                        className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-200"
+                                    >
+                                        تأكيد الإجراء
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- MASTER HEADER --- */}
+                    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                        
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <div 
+                                className="p-2.5 bg-[#0F172A] text-white rounded-2xl shadow-lg shadow-slate-900/10 select-none"
+                            >
+                                <BookOpen size={24} className="animate-pulse" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-xl font-black tracking-tight text-slate-900">متابعة التسميع</h1>
+                                    <span className="text-[10px] bg-indigo-50 text-indigo-600 border border-indigo-100/50 px-2.5 py-0.5 rounded-full font-bold">
+                                        {currentUserRole === 'admin' ? 'الإدارة العامة' : currentUserRole === 'nokhba1' ? 'إشراف نخبة ١' : 'إشراف نخبة ٢'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-400 font-medium mt-0.5">لوحة التحكم، الإحصائيات الفورية، والمتابعة التفاعلية للأجزاء</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                            
+                            {currentUserRole === 'admin' && activeTab === 'dashboard' && (
+                                <div className="bg-slate-100 p-1 rounded-xl flex items-center">
+                                    <button 
+                                        onClick={() => setViewMode('grid')}
+                                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                            viewMode === 'grid' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                        }`}
+                                        title="عرض البطاقات"
+                                    >
+                                        <span>🔲 بطاقات</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => setViewMode('list')}
+                                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                            viewMode === 'list' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                        }`}
+                                        title="عرض القائمة"
+                                    >
+                                        <span>📋 قائمة</span>
+                                    </button>
+                                </div>
+                            )}
+
+                            <button 
+                                onClick={loadLiveData}
+                                disabled={isLoading}
+                                title="تحديث البيانات من السحابة"
+                                className={`p-2.5 bg-slate-100 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all ${isLoading ? 'animate-spin text-indigo-600 bg-indigo-50' : ''}`}
+                            >
+                                <RefreshCw size={16} />
+                            </button>
+
+                            <button 
+                                onClick={handleLogout}
+                                title="تسجيل الخروج"
+                                className="p-2.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-all"
+                            >
+                                <LogOut size={16} />
+                            </button>
+
+                        </div>
+                    </header>
+
+                    {/* --- MAIN WORKSPACE --- */}
+                    <main className="p-6 max-w-7xl mx-auto space-y-6">
+
+                        {/* --- GOOGLE SHEETS TROUBLESHOOTING --- */}
+                        {showTroubleshooting && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 space-y-4 animate-in slide-in-from-top-4 duration-300">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2 bg-amber-100 text-amber-800 rounded-xl mt-1">
+                                            <AlertTriangle size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-amber-900">حل مشكلة ربط وتحديث جدول البيانات (Google Sheets)</h3>
+                                            <p className="text-xs text-amber-700 mt-1 font-medium">إذا كنت تواجه مشكلة "فشل التحديث" أو حظر CORS، يرجى مراجعة الخطوات البسيطة التالية:</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowTroubleshooting(false)} 
+                                        className="p-1 text-amber-500 hover:text-amber-800 hover:bg-amber-100/50 rounded-lg transition"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
+
+                                {fetchErrorDetail && (
+                                    <div className="p-3 bg-red-50 border border-red-100 text-red-700 rounded-xl text-xs font-mono" dir="ltr">
+                                        <strong>Error Details:</strong> {fetchErrorDetail}
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-medium text-amber-950 mt-2">
+                                    <div className="bg-white/60 p-4 rounded-2xl border border-amber-200/50 space-y-2">
+                                        <span className="font-bold text-amber-900 block">1. إعدادات النشن في Google Sheets (الأهم):</span>
+                                        <p>في نافذة البرمجة Apps Script عند إنشاء نشر جديد <strong>New Deployment</strong>:</p>
+                                        <ul className="list-disc list-inside space-y-1.5 mr-2 text-amber-800">
+                                            <li>اضبط خيار <strong>Execute as</strong> (تشغيل كـ) على: <strong>"Me" (أنا)</strong>.</li>
+                                            <li>اضبط خيار <strong>Who has access</strong> (من لديه صلاحية الوصول) على: <strong className="text-indigo-700">"Anyone" (أي شخص)</strong> وليس "Anyone with Google account".</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="bg-white/60 p-4 rounded-2xl border border-amber-200/50 space-y-2">
+                                        <span className="font-bold text-amber-900 block">2. كود الإرسال البرمجي الصحيح:</span>
+                                        <p>تأكد أن دالة <code>doGet</code> في Apps Script تقوم بإرجاع النص بصيغة JSON رسمية لتجنب الحظر الأمنى:</p>
+                                        <pre className="p-2 bg-slate-900 text-slate-100 text-[10px] rounded-xl font-mono overflow-x-auto text-left" dir="ltr">
+{`function doGet() {
+  var data = { "students": [...] };
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}`}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 justify-end pt-2">
+                                    <button 
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(`function doGet() {\n  // استبدل هذا بالمحتوى الخاص بك\n  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();\n  var data = { "students": [] }; \n  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);\n}`);
+                                            triggerNotification('تم نسخ مثال كود التسميع للحافظة!', 'success');
+                                        }}
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-xl text-xs font-bold transition-all"
+                                    >
+                                        <Copy size={13} />
+                                        <span>نسخ مثال كود Apps Script</span>
+                                    </button>
+                                    <button 
+                                        onClick={loadLiveData}
+                                        className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all"
+                                    >
+                                        <RefreshCw size={13} />
+                                        <span>إعادة المحاولة الآن</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- DYNAMIC COLLAPSED METRIC ALERT --- */}
+                        {/* --- DUAL INTERACTIVE WORKSPACE --- */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                            
+                            {/* LEFT AREA: DASHBOARD OR JSON WORKSPACE */}
+                            <div className={`lg:col-span-12 space-y-6 ${activeTab === 'editor' ? 'hidden' : 'block'}`}>
+                                
+                                {/* --- LESSON RECORD BUTTONS --- */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <button
+                                        onClick={() => setShowLessonHistoryNokhba1(true)}
+                                        className="w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl text-sm transition-all shadow-md hover:shadow-lg"
+                                    >
+                                        انظر سجل دروس نخبة١
+                                    </button>
+                                    <button
+                                        onClick={() => setShowLessonHistoryNokhba2(true)}
+                                        className="w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl text-sm transition-all shadow-md hover:shadow-lg"
+                                    >
+                                        انظر سجل دروس نخبة٢
+                                    </button>
+                                </div>
+                                
+                                {/* --- TOP 3 KPI CARDS - DYNAMICALLY TIED TO ACTIVE FILTERS --- */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
+                                        <div className="flex flex-col justify-between h-full">
+                                            <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">إجمالي حفظ الجديد للطلاب الظاهرين</span>
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
+                                                    {overallMetrics.totalNew}
+                                                </span>
+                                                <span className="text-xs font-bold text-slate-400">صفحة</span>
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                            <Check size={24} className="stroke-[3]" />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
+                                        <div className="flex flex-col justify-between h-full">
+                                            <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">إجمالي مراجعة الطلاب الظاهرين</span>
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
+                                                    {overallMetrics.totalReview}
+                                                </span>
+                                                <span className="text-xs font-bold text-slate-400">صفحة</span>
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                            <TrendingUp size={24} className="stroke-[2.5]" />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
+                                        <div className="flex flex-col justify-between h-full">
+                                            <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">نسبة الإنجاز للطلاب الظاهرين</span>
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
+                                                    {overallMetrics.achievementRate}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-amber-50 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                            <Award size={24} className="stroke-[2.5]" />
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                {/* --- SEARCH, DYNAMIC DATE FILTER, SORT BAR --- */}
+                                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
+                                    
+                                    <div className="flex items-center gap-3 px-4 py-2 bg-[#F8FAFC] border border-slate-100 rounded-xl text-xs text-slate-600 w-full xl:w-auto">
+                                        <Calendar size={18} className="text-indigo-500 flex-shrink-0" />
+                                        <div className="flex flex-wrap items-center gap-2 font-sans w-full">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-slate-400 font-medium">من:</span>
+                                                <input 
+                                                    type="date" 
+                                                    value={startDate} 
+                                                    onChange={(e) => setStartDate(e.target.value)}
+                                                    className="bg-transparent border-none p-0 focus:outline-none focus:ring-0 font-mono text-slate-700 cursor-pointer font-bold w-28 text-center"
+                                                />
+                                            </div>
+                                            <span className="text-slate-300 hidden sm:inline">|</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-slate-400 font-medium">إلى:</span>
+                                                <input 
+                                                    type="date" 
+                                                    value={endDate} 
+                                                    onChange={(e) => setEndDate(e.target.value)}
+                                                    className="bg-transparent border-none p-0 focus:outline-none focus:ring-0 font-mono text-slate-700 cursor-pointer font-bold w-28 text-center"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative flex-1">
+                                        <input 
+                                            type="text" 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="ابحث عن طالب من قائمة التسميع..."
+                                            className="w-full pl-4 pr-11 py-2.5 bg-[#F8FAFC] hover:bg-slate-100 focus:bg-white border border-slate-100 focus:border-indigo-100 shadow-inner rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all placeholder-slate-300"
+                                        />
+                                        <Search size={16} className="absolute right-4 top-3 text-slate-400" />
+                                        {searchQuery && (
+                                            <button 
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute left-3 top-3 text-slate-400 hover:text-slate-600"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        
+                                        <div className="flex items-center gap-1">
+                                            <Filter size={14} className="text-slate-400" />
+                                            <select 
+                                                value={selectedLevel}
+                                                onChange={(e) => setSelectedLevel(e.target.value)}
+                                                className="bg-[#F8FAFC] border border-slate-100 hover:bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 focus:outline-none cursor-pointer"
+                                            >
+                                                <option value="all">كل المجموعات (الكل)</option>
+                                                {dynamicGroupsList.map(grp => (
+                                                    <option key={grp} value={grp}>{grp}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                            <ArrowUpDown size={14} className="text-slate-400" />
+                                            <select 
+                                                value={sortBy}
+                                                onChange={(e) => setSortBy(e.target.value)}
+                                                className="bg-[#F8FAFC] border border-slate-100 hover:bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 focus:outline-none"
+                                            >
+                                                <option value="name-asc">الاسم (أ - ي)</option>
+                                                <option value="name-desc">الاسم (ي - أ)</option>
+                                                <option value="pages-desc">الأعلى إنجازاً بالصفحات (خلال النطاق)</option>
+                                            </select>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                {/* --- LISTINGS SUB-COUNTER --- */}
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-2 gap-2">
+                                    <p className="text-xs text-slate-400 font-bold">
+                                        عرض <span className="text-indigo-600 font-black">{processedStudents.length}</span> طالب من أصل <span className="text-slate-700 font-black">{data.students?.length || 0}</span>
+                                    </p>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-3 py-1 rounded-lg">
+                                            التصفية مفعلة لـ {OFFICIAL_RECITATION_DATES.filter(isDateInRange).length} جلسة رسمية ضمن النطاق المختار
+                                        </span>
+                                        {processedStudents.length === 0 && (
+                                            <span className="text-xs text-red-500 font-bold bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                                                لا تتوفر نتائج تطابق تصفيتك الحالية
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* --- STUDENT CARDS GRID MATCHING IMAGE DESIGN --- */}
+                                {viewMode === 'grid' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {processedStudents.map((student) => {
+                                        const filteredHistory = (student.history || []).filter(session => isDateInRange(session.date));
+                                        const sundaySessions = filteredHistory.filter(session => isSunday(session.date));
+                                        const weekdaySessions = filteredHistory.filter(session => !isSunday(session.date));
+
+                                        const summarizeRaw = (sessions, category) => {
+                                            const activeItems = sessions.map(s => s[category]).filter(Boolean);
+                                            if (activeItems.length === 0) return '---';
+
+                                            const starts = activeItems.map(item => item.start).filter(v => typeof v === 'number' && !isNaN(v));
+                                            const ends = activeItems.map(item => item.end).filter(v => typeof v === 'number' && !isNaN(v));
+
+                                            const allHaveStartEnd = activeItems.every(item => typeof item.start === 'number' && typeof item.end === 'number');
+
+                                            if (allHaveStartEnd && starts.length > 0 && ends.length > 0) {
+                                                const minStart = Math.min(...starts);
+                                                const maxEnd = Math.max(...ends);
+                                                if (minStart === maxEnd) return `${minStart}`;
+                                                return `${minStart}-${maxEnd}`;
+                                            }
+
+                                            const uniqueRaws = [...new Set(activeItems.map(item => item.raw.trim()))];
+                                            return uniqueRaws.join(' ، ');
+                                        };
+
+                                        const totalNewPagesInRange = weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
+                                        const totalReviewPagesInRange = weekdaySessions.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0);
+
+                                        const currentNewRaw = summarizeRaw(weekdaySessions, 'new');
+                                        const currentNewPages = totalNewPagesInRange > 0 ? totalNewPagesInRange.toFixed(1) : '0.0';
+                                        const currentNewGrade = calculateMeanGrade(weekdaySessions, 'new');
+
+                                        const currentReviewRaw = summarizeRaw(weekdaySessions, 'review');
+                                        const currentReviewPages = totalReviewPagesInRange > 0 ? totalReviewPagesInRange.toFixed(1) : '0.0';
+                                        const currentReviewGrade = calculateMeanGrade(weekdaySessions, 'review');
+
+                                        const totalSardNewPages = sundaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
+                                        const currentSardNewRaw = summarizeRaw(sundaySessions, 'new');
+                                        const currentSardNewPages = totalSardNewPages > 0 ? totalSardNewPages.toFixed(1) : '0.0';
+                                        const currentSardGrade = calculateMeanGrade(sundaySessions, 'new');
+                                        const totalSardSessions = sundaySessions.length;
+
+                                        const studentGroup = student.group || student.level || 'نخبة١';
+                                        const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
+
+                                        const progressPercentage = targetPages > 0 
+                                            ? Math.min(100, Math.round((totalNewPagesInRange / targetPages) * 100)) 
+                                            : 100;
+
+                                                    const attendedDays = filteredHistory.filter(session => session.attendance?.present).length;
+                                                    const expectedDays = OFFICIAL_RECITATION_DATES.filter(date => date >= startDate && date <= endDate).length;
+
+                                                    return (
+                                                        <div 
+                                                            key={student.id}
+                                                            onClick={() => setSelectedStudent(student)}
+                                                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100/40 shadow-xs group cursor-pointer hover:shadow-md hover:border-indigo-100/50 transition-all"
+                                                        >
+                                                            <div className="flex justify-between items-center mb-6">
+                                                        <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100/70 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
+                                                            <span className="w-2.5 h-2.5 rounded-full bg-slate-200 group-hover:bg-indigo-400 transition-colors"></span>
+                                                        </div>
+                                                        
+                                                        <div className="flex gap-1.5 text-[10px] font-bold">
+                                                            <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100/30 font-black">
+                                                                {studentGroup}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <h3 className="text-lg font-black text-slate-800 group-hover:text-indigo-600 transition-colors mb-2 text-right">
+                                                        {student.name}
+                                                    </h3>
+
+                                                    {student.warnings && WARNING_TYPES.some(t => (student.warnings[t] || 0) > 0) && (
+                                                        <div className="flex flex-wrap gap-1 mb-3">
+                                                            {WARNING_TYPES.filter(t => (student.warnings[t] || 0) > 0).map(type => (
+                                                                <span key={type} className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${getWarningStyle(type).pill}`}>
+                                                                    {type}: {student.warnings[type]}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <p className="text-[10px] text-slate-400 font-bold mb-4">
+                                                        الهدف للحفظ الجديد في النطاق: <span className="text-slate-700 font-extrabold">{targetPages} صفحات</span>
+                                                    </p>
+
+                                                    {/* New Memorization Section */}
+                                                    <div className="mb-4">
+                                                        <div className="flex justify-between items-center text-xs text-slate-400 mb-2 font-semibold">
+                                                            <div className="flex items-center gap-1">
+                                                                <BookOpen size={13} className="text-indigo-500" />
+                                                                <span className="text-slate-500">حفظ الجديد</span>
+                                                            </div>
+                                                            {currentNewGrade && (
+                                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getGradePillClass(currentNewGrade)}`}>
+                                                                    {currentNewGrade}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex justify-between items-center bg-slate-50/70 rounded-2xl p-3 border border-slate-100/50 group-hover:bg-slate-50 transition-colors">
+                                                            <span className="text-xs font-black text-slate-700 font-mono truncate max-w-[150px]" title={currentNewRaw}>
+                                                                {currentNewRaw}
+                                                            </span>
+                                                            <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                {currentNewPages} ص
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Review Memorization Section */}
+                                                    <div className="mb-4">
+                                                        <div className="flex justify-between items-center text-xs text-slate-400 mb-2 font-semibold">
+                                                            <div className="flex items-center gap-1">
+                                                                <TrendingUp size={13} className="text-sky-500" />
+                                                                <span className="text-slate-500">المراجعة (أيام التسميع)</span>
+                                                            </div>
+                                                            {currentReviewGrade && (
+                                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getGradePillClass(currentReviewGrade)}`}>
+                                                                    {currentReviewGrade}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex justify-between items-center bg-slate-50/70 rounded-2xl p-3 border border-slate-100/50 group-hover:bg-slate-50 transition-colors">
+                                                            <span className="text-xs font-black text-slate-400 font-mono truncate max-w-[150px]" title={currentReviewRaw}>
+                                                                {currentReviewRaw}
+                                                            </span>
+                                                            <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                {currentReviewPages} ص
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Premium Sard Section (Sundays) */}
+                                                    <div>
+                                                        <div className="flex justify-between items-center text-xs text-slate-400 mb-2 font-semibold">
+                                                            <div className="flex items-center gap-1">
+                                                                <Award size={13} className="text-purple-500" />
+                                                                <span className="text-purple-600 font-bold">سرد (الأحد)</span>
+                                                            </div>
+                                                            {currentSardGrade && (
+                                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getGradePillClass(currentSardGrade)}`}>
+                                                                    {currentSardGrade}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="bg-purple-50/40 rounded-2xl p-3 border border-purple-100/30 group-hover:bg-purple-50/70 transition-all space-y-1.5">
+                                                            {totalSardSessions === 0 ? (
+                                                                <p className="text-[10px] text-purple-400/80 font-bold text-center py-1">لا يوجد سرد مسجل في هذا النطاق</p>
+                                                            ) : (
+                                                                <div className="flex justify-between items-center text-[11px]">
+                                                                    <span className="font-semibold text-purple-500">سرد الجديد:</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-black text-slate-700 font-mono text-xs">{currentSardNewRaw}</span>
+                                                                        <span className="bg-purple-100/80 text-purple-800 border border-purple-200/50 px-2.5 py-0.5 rounded-lg text-[10px] font-black font-mono whitespace-nowrap">
+                                                                            {currentSardNewPages} ص
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4 pt-3 border-t border-slate-100/60 flex items-center justify-between text-[10px]">
+                                                    <div className="flex items-center gap-2 text-slate-500 font-bold">
+                                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100/50 font-black">
+                                                            {attendedDays}/{expectedDays} حضور
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-3 pt-3 border-t border-slate-100/60 flex justify-between items-center text-[10px] font-bold text-slate-800">
+                                                    <span className="font-mono text-slate-600">{progressPercentage}%</span>
+                                                    
+                                                    <div className="flex-1 mx-4 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-slate-800 group-hover:bg-indigo-600 transition-all rounded-full" 
+                                                            style={{ width: `${progressPercentage}%` }}
+                                                        ></div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1.5 text-slate-400 font-bold whitespace-nowrap">
+                                                        <span>إنجاز النطاق (جديد)</span>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 group-hover:bg-indigo-600 transition-colors"></span>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                )}
+
+                                {/* --- STUDENT LIST VIEW --- */}
+                                {viewMode === 'list' && (
+                                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-right">
+                                            <thead>
+                                                <tr className="border-b-2 border-slate-200 bg-slate-50">
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الاسم</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">المجموعة</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">حفظ جديد</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">مراجعة</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">سرد</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الهدف</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الإنجاز</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الحضور</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">التحذيرات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {processedStudents.map((student, index) => {
+                                                    const filteredHistory = (student.history || []).filter(session => isDateInRange(session.date));
+                                                    const sundaySessions = filteredHistory.filter(session => isSunday(session.date));
+                                                    const weekdaySessions = filteredHistory.filter(session => !isSunday(session.date));
+
+                                                    const totalNewPagesInRange = weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
+                                                    const totalReviewPagesInRange = weekdaySessions.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0);
+                                                    const totalSardNewPages = sundaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
+
+                                                    const studentGroup = student.group || student.level || 'نخبة١';
+                                                    const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
+                                                    const progressPercentage = targetPages > 0 
+                                                        ? Math.min(100, Math.round((totalNewPagesInRange / targetPages) * 100)) 
+                                                        : 100;
+
+                                                    const attendedDays = (student.history || []).filter(session => session.attendance?.present).length;
+                                                    const expectedDays = OFFICIAL_RECITATION_DATES.filter(date => date >= startDate && date <= endDate).length;
+
+                                                    return (
+                                                        <tr 
+                                                            key={student.id}
+                                                            onClick={() => setSelectedStudent(student)}
+                                                            className={`border-b border-slate-100 hover:bg-indigo-50/50 transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
+                                                        >
+                                                            <td className="px-4 py-3 font-bold text-slate-800">{student.name}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-black border border-indigo-100/30">
+                                                                    {studentGroup}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="font-black text-slate-800">{totalNewPagesInRange.toFixed(1)}</span>
+                                                                    <span className="text-[10px] text-slate-400">ص</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="font-black text-slate-800">{totalReviewPagesInRange.toFixed(1)}</span>
+                                                                    <span className="text-[10px] text-slate-400">ص</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="font-black text-slate-800">{totalSardNewPages.toFixed(1)}</span>
+                                                                    <span className="text-[10px] text-slate-400">ص</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <span className="font-black text-slate-800">{targetPages}</span>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                        <div 
+                                                                            className="h-full bg-indigo-600 rounded-full" 
+                                                                            style={{ width: `${progressPercentage}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    <span className="font-black text-slate-700 text-xs w-8 text-left">{progressPercentage}%</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-black border border-blue-100/50">
+                                                                    {attendedDays}/{expectedDays}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {student.warnings && WARNING_TYPES.some(t => (student.warnings[t] || 0) > 0)
+                                                                        ? WARNING_TYPES.filter(t => (student.warnings[t] || 0) > 0).map(type => (
+                                                                            <span key={type} className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${getWarningStyle(type).pill}`}>
+                                                                                {type}: {student.warnings[type]}
+                                                                            </span>
+                                                                        ))
+                                                                        : <span className="text-[10px] text-slate-300 font-bold">—</span>
+                                                                    }
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                )}
+
+                            </div>
+
+                            {/* --- ADMIN LESSON HISTORY MODALS --- */}
+                            {showLessonHistoryNokhba1 && (
+                                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                                        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+                                            <h2 className="text-xl font-black text-slate-900">سجل دروس نخبة١</h2>
+                                            <button
+                                                onClick={() => setShowLessonHistoryNokhba1(false)}
+                                                className="text-slate-500 hover:text-slate-700 text-2xl font-bold leading-none"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <div className="p-6 space-y-4">
+                                            {(() => {
+                                                const allLessonDates = data.lessons && data.lessons['نخبة١'] 
+                                                    ? Object.keys(data.lessons['نخبة١']).sort().reverse()
+                                                    : [];
+                                                
+                                                if (allLessonDates.length === 0) {
+                                                    return <p className="text-slate-500 text-center py-8">لا توجد دروس مسجلة</p>;
+                                                }
+                                                
+                                                return allLessonDates.map((date) => (
+                                                    <div key={date} className="border border-slate-200 rounded-xl p-4 space-y-3">
+                                                        <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                                            <Calendar size={14} className="text-blue-600" />
+                                                            <span>{date}</span>
+                                                        </h3>
+                                                        <div className="space-y-2 ml-6">
+                                                            {data.lessons['نخبة١'][date].map((lesson, idx) => (
+                                                                <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                                    <div className="flex items-start gap-2 mb-2">
+                                                                        <BookMarked size={12} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                                        <h4 className="text-xs font-bold text-slate-900">{lesson.lesson}</h4>
+                                                                    </div>
+                                                                    {lesson.notes && (
+                                                                        <div className="text-[11px] text-slate-600 ml-6 mb-1">
+                                                                            <span className="font-bold text-slate-500">ملاحظات: </span>{lesson.notes}
+                                                                        </div>
+                                                                    )}
+                                                                    {lesson.homework && (
+                                                                        <div className="text-[11px] text-amber-800 ml-6 bg-amber-50 p-1.5 rounded">
+                                                                            <span className="font-bold">واجب: </span>{lesson.homework}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {showLessonHistoryNokhba2 && (
+                                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                                        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+                                            <h2 className="text-xl font-black text-slate-900">سجل دروس نخبة٢</h2>
+                                            <button
+                                                onClick={() => setShowLessonHistoryNokhba2(false)}
+                                                className="text-slate-500 hover:text-slate-700 text-2xl font-bold leading-none"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <div className="p-6 space-y-4">
+                                            {(() => {
+                                                const allLessonDates = data.lessons && data.lessons['نخبة٢'] 
+                                                    ? Object.keys(data.lessons['نخبة٢']).sort().reverse()
+                                                    : [];
+                                                
+                                                if (allLessonDates.length === 0) {
+                                                    return <p className="text-slate-500 text-center py-8">لا توجد دروس مسجلة</p>;
+                                                }
+                                                
+                                                return allLessonDates.map((date) => (
+                                                    <div key={date} className="border border-slate-200 rounded-xl p-4 space-y-3">
+                                                        <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                                            <Calendar size={14} className="text-blue-600" />
+                                                            <span>{date}</span>
+                                                        </h3>
+                                                        <div className="space-y-2 ml-6">
+                                                            {data.lessons['نخبة٢'][date].map((lesson, idx) => (
+                                                                <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                                    <div className="flex items-start gap-2 mb-2">
+                                                                        <BookMarked size={12} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                                                                        <h4 className="text-xs font-bold text-slate-900">{lesson.lesson}</h4>
+                                                                    </div>
+                                                                    {lesson.notes && (
+                                                                        <div className="text-[11px] text-slate-600 ml-6 mb-1">
+                                                                            <span className="font-bold text-slate-500">ملاحظات: </span>{lesson.notes}
+                                                                        </div>
+                                                                    )}
+                                                                    {lesson.homework && (
+                                                                        <div className="text-[11px] text-amber-800 ml-6 bg-amber-50 p-1.5 rounded">
+                                                                            <span className="font-bold">واجب: </span>{lesson.homework}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ACTIVE TAB: EDITOR ONLY PANEL VIEW */}
+                            {currentUserRole === 'admin' && (
+                                <div className={`lg:col-span-12 ${activeTab === 'editor' ? 'block' : 'hidden'}`}>
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                                        <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                                            <div>
+                                                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                                                    <Code className="text-indigo-600" size={20} />
+                                                    <span>محرر كود البيانات الفوري (JSON)</span>
+                                                </h3>
+                                                <p className="text-xs text-slate-400 font-medium">التحكم الكلي وتعديل الطلاب وإدخالهم وقراءة البيانات البرمجية</p>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-slate-400">حالة الصياغة:</span>
+                                                {jsonError ? (
+                                                    <span className="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg border border-red-100">
+                                                        غير صالحة
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-lg border border-emerald-100">
+                                                        سليمة تماماً
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {jsonError && (
+                                            <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl space-y-1">
+                                                <p className="flex items-center gap-1.5">
+                                                    <Info size={14} />
+                                                    <span>حدث خطأ أثناء قراءة الكود الخاص بك:</span>
+                                                </p>
+                                                <p className="font-mono bg-white/50 p-2 rounded border border-red-200/50 mt-1" dir="ltr">
+                                                    {jsonError}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-xs font-black text-slate-500">قم بنسخ أو تعديل مصفوفة الطلاب مباشرة:</label>
+                                                <button 
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(jsonText);
+                                                        triggerNotification('تم نسخ كود الـ JSON إلى الحافظة!');
+                                                    }}
+                                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-3 py-1 rounded-lg"
+                                                >
+                                                    نسخ الكود بالكامل
+                                                </button>
+                                            </div>
+                                            
+                                            <textarea
+                                                value={jsonText}
+                                                onChange={(e) => handleJsonTextChange(e.target.value)}
+                                                className="w-full h-96 p-4 rounded-2xl border border-slate-200 font-mono text-xs focus:ring-4 focus:ring-indigo-100 focus:outline-none transition-all leading-relaxed bg-[#0F172A] text-slate-100"
+                                                dir="ltr"
+                                            />
+                                        </div>
+
+                                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400 font-medium">
+                                            <span>تأثير التغييرات فوري على لوحة التحكم ومتابعة بطاقات الطلاب.</span>
+                                            <button 
+                                                onClick={() => handleJsonTextChange(JSON.stringify(initialData, null, 2))}
+                                                className="text-red-500 hover:text-red-700 font-bold"
+                                            >
+                                                استعادة الملف الأصلي الافتراضي
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+
+                    </main>
+
+                    {/* --- MODAL 1: STUDENT HISTORY TIMELINE VIEW --- */}
+                    {selectedStudent && (() => {
+                        const totalHistory = selectedStudent.history || [];
+                        const filteredHistory = totalHistory.filter(session => isDateInRange(session.date));
+                        const studentGroup = selectedStudent.group || selectedStudent.level || '---';
+                        const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
+                        
+                        return (
+                            <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+                                <div className="bg-white rounded-[2rem] max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200">
+                                    
+                                    <div className="p-6 bg-slate-900 text-white flex justify-between items-start">
+                                        <div>
+                                            <span className="px-2 py-0.5 bg-indigo-500/30 text-indigo-300 text-[10px] font-bold rounded-md">
+                                                سجل الطالب التفصيلي
+                                            </span>
+                                            <h3 className="text-xl font-black mt-2">{selectedStudent.name}</h3>
+                                            <p className="text-xs text-slate-400 mt-1">المجموعة: {studentGroup}</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => setSelectedStudent(null)}
+                                            className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+
+                                    <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+                                        
+                                        {selectedStudent.notes && (
+                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <AlertTriangle size={16} className="text-blue-600" />
+                                                    <h4 className="text-xs font-black text-blue-900">ملاحظات</h4>
+                                                </div>
+                                                <p className="text-xs text-blue-800 font-medium whitespace-pre-wrap">{selectedStudent.notes}</p>
+                                            </div>
+                                        )}
+
+                                        <div className="p-3 bg-amber-50 border border-amber-100 text-amber-800 text-xs font-semibold rounded-2xl flex items-center gap-2">
+                                            <Calendar size={16} className="text-amber-600 flex-shrink-0" />
+                                            <span>
+                                                النتائج المذكورة بالأسفل مصفاة حالياً لتشمل الفترة المحددة: من <strong>{startDate}</strong> إلى <strong>{endDate}</strong> (شاملة).
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                                                <span className="text-[10px] font-bold text-slate-400 mb-1">حفظ جديد بالنطاق</span>
+                                                <span className="sm:text-lg md:text-2xl font-black text-indigo-600 font-mono">
+                                                    {filteredHistory.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0).toFixed(1)}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 mt-1">صفحة فعلية</span>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                                                <span className="text-[10px] font-bold text-slate-400 mb-1">الهدف المطلوب بالنطاق</span>
+                                                <span className="sm:text-lg md:text-2xl font-black text-slate-800 font-mono">
+                                                    {targetPages}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 mt-1">صفحة هدف</span>
+                                            </div>
+
+                                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                                                <span className="text-[10px] font-bold text-slate-400 mb-1">مراجعة بالنطاق</span>
+                                                <span className="sm:text-lg md:text-2xl font-black text-sky-600 font-mono">
+                                                    {filteredHistory.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0).toFixed(1)}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400 mt-1">صفحة</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-sm font-black text-slate-700 flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                                                <Sparkles size={16} className="text-indigo-500" />
+                                                <span>خط الجدول الزمني للجلسات المسجلة بالنطاق ({filteredHistory.length} جلسة)</span>
+                                            </h4>
+
+                                            {filteredHistory.length === 0 ? (
+                                                <p className="text-center text-xs text-slate-400 py-6">لم يتم تسجيل أي جلسة تسميع لهذا الطالب تقع ضمن نطاق التواريخ المحددة.</p>
+                                            ) : (
+                                                <div className="space-y-4 relative border-r-2 border-indigo-100/60 mr-4 pr-6">
+                                                    {filteredHistory.map((session, index) => {
+                                                        const sunday = isSunday(session.date);
+                                                        return (
+                                                            <div key={index} className="relative space-y-2">
+                                                                <div className="absolute right-[-31px] top-1.5 w-4.5 h-4.5 rounded-full bg-indigo-50 border-2 border-indigo-500 flex items-center justify-center">
+                                                                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                                                </div>
+
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-xs font-black text-indigo-600 font-mono bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                                                            {session.date}
+                                                                        </span>
+                                                                        {sunday && (
+                                                                            <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+                                                                                جلسة سرد
+                                                                            </span>
+                                                                        )}
+                                                                        {session.attendance && (
+                                                                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                                                                                session.attendance.present 
+                                                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                                                                    : 'bg-red-50 text-red-700 border-red-100'
+                                                                            }`}>
+                                                                                {session.attendance.status}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/70">
+                                                                    <div className="text-xs">
+                                                                        <span className="text-slate-400 block mb-1 font-bold">الحفظ الجديد</span>
+                                                                        {session.new ? (
+                                                                            <div className="flex justify-between bg-white px-3 py-2 rounded-xl border border-slate-100">
+                                                                                <span className="font-bold text-slate-700 font-mono">{session.new.raw}</span>
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                                        {session.new.pages} ص
+                                                                                    </span>
+                                                                                    {session.new.grade && (
+                                                                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${getGradePillClass(session.new.grade)}`}>
+                                                                                            {session.new.grade}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 italic">لم يحفظ جديداً</span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    <div className="text-xs">
+                                                                        <span className="text-slate-400 block mb-1 font-bold">المراجعة</span>
+                                                                        {session.review ? (
+                                                                            <div className="flex justify-between bg-white px-3 py-2 rounded-xl border border-slate-100">
+                                                                                <span className="font-bold text-slate-700 font-mono">{session.review.raw}</span>
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                                        {session.review.pages} ص
+                                                                                    </span>
+                                                                                    {session.review.grade && (
+                                                                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${getGradePillClass(session.review.grade)}`}>
+                                                                                            {session.review.grade}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 italic">لا مراجعة في الجلسة</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                    </div>
+
+                                    <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end items-center">
+                                        <button 
+                                            onClick={() => setSelectedStudent(null)}
+                                            className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all"
+                                        >
+                                            إغلاق النافذة
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* --- MODAL 2: ADD NEW SESSION FORM --- */}
+                    {showAddSessionModal && (
+                        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+                            <form 
+                                onSubmit={handleAddSessionSubmit} 
+                                className="bg-white rounded-[2rem] max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200"
+                            >
+                                
+                                <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-lg font-black">تسجيل جلسة تسميع وحفظ</h3>
+                                        <p className="text-xs text-indigo-200 mt-1">تحديث إنجاز الطلاب ومراجعاتهم الفورية</p>
+                                    </div>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowAddSessionModal(false)}
+                                        className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                                    
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-black text-slate-600">اختر الطالب المعني:</label>
+                                        <select
+                                            required
+                                            value={formStudentId}
+                                            onChange={(e) => setFormStudentId(e.target.value)}
+                                            className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+                                        >
+                                            <option value="">-- اختر طالب من الحلقة --</option>
+                                            {data.students?.map(s => (
+                                                <option key={s.id} value={s.id}>{s.name} ({s.group || s.level})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-black text-slate-600">تاريخ الجلسة التسميعية:</label>
+                                        <input 
+                                            type="date" 
+                                            required
+                                            value={formDate}
+                                            onChange={(e) => setFormDate(e.target.value)}
+                                            className="w-full p-3 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                        />
+                                    </div>
+
+                                    <div className="border-t border-slate-100 pt-4 space-y-3">
+                                        <h4 className="text-xs font-black text-indigo-600 uppercase tracking-wider">القسم الأول: الحفظ الجديد</h4>
+                                        
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div className="col-span-2 space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400">الصفحات (مثال: 301-305)</label>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="301-305"
+                                                    value={formNewRaw}
+                                                    onChange={(e) => setFormNewRaw(e.target.value)}
+                                                    className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400">عدد الصفحات</label>
+                                                <input 
+                                                    type="number" 
+                                                    step="0.5"
+                                                    placeholder="5"
+                                                    value={formNewPages}
+                                                    onChange={(e) => setFormNewPages(e.target.value)}
+                                                    className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400">التقدير / الدرجة</label>
+                                            <select
+                                                value={formNewGrade}
+                                                onChange={(e) => setFormNewGrade(e.target.value)}
+                                                className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                            >
+                                                <option value="ممتاز">ممتاز</option>
+                                                <option value="جيد جدًا">جيد جدًا</option>
+                                                <option value="جيد">جيد</option>
+                                                <option value="مقبول">مقبول</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-slate-100 pt-4 space-y-3">
+                                        <h4 className="text-xs font-black text-sky-600 uppercase tracking-wider">القسم الثاني: مراجعة القديم</h4>
+                                        
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div className="col-span-2 space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400">الصفحات (مثال: 10-25)</label>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="10-25"
+                                                    value={formReviewRaw}
+                                                    onChange={(e) => setFormReviewRaw(e.target.value)}
+                                                    className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400">عدد الصفحات</label>
+                                                <input 
+                                                    type="number" 
+                                                    step="0.5"
+                                                    placeholder="15"
+                                                    value={formReviewPages}
+                                                    onChange={(e) => setFormReviewPages(e.target.value)}
+                                                    className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400">التقدير / الدرجة</label>
+                                            <select
+                                                value={formReviewGrade}
+                                                onChange={(e) => setFormReviewGrade(e.target.value)}
+                                                className="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                            >
+                                                <option value="ممتاز">ممتاز</option>
+                                                <option value="جيد جدًا">جيد جدًا</option>
+                                                <option value="جيد">جيد</option>
+                                                <option value="مقبول">مقبول</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowAddSessionModal(false)}
+                                        className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                                    >
+                                        إلغاء الأمر
+                                    </button>
+
+                                    <button 
+                                        type="submit"
+                                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100 transition-all"
+                                    >
+                                        حفظ وتسجيل الجلسة
+                                    </button>
+                                </div>
+
+                            </form>
+                        </div>
+                    )}
+
+                    {/* --- MODAL 3: ADD NEW STUDENT FORM --- */}
+                    {showAddStudentModal && (
+                        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+                            <form 
+                                onSubmit={handleAddStudentSubmit} 
+                                className="bg-white rounded-[2rem] max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200"
+                            >
+                                
+                                <div className="p-6 bg-emerald-600 text-white flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-lg font-black">إضافة طالب جديد</h3>
+                                        <p className="text-xs text-emerald-200 mt-1">توسيع سجلات المتابعة وإشراك طلاب جدد بالحلقة</p>
+                                    </div>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowAddStudentModal(false)}
+                                        className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 space-y-4">
+                                    
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-black text-slate-600">اسم الطالب كاملاً:</label>
+                                        <input 
+                                            type="text" 
+                                            required
+                                            placeholder="مثال: يوسف أحمد الفياض"
+                                            value={newStudentName}
+                                            onChange={(e) => setNewStudentName(e.target.value)}
+                                            className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-black text-slate-600">المجموعة / الحلقة الدراسية:</label>
+                                        <select
+                                            value={newStudentGroup}
+                                            onChange={(e) => setNewStudentGroup(e.target.value)}
+                                            className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                        >
+                                            <option value="نخبة١">نخبة١ (الهدف: 8 صفحات/أسبوع)</option>
+                                            <option value="نخبة٢">نخبة٢ (الهدف: 4 صفحات/أسبوع)</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-black text-slate-600">معدل حضور البدء (تلقائي):</label>
+                                        <input 
+                                            type="text"
+                                            value={newStudentAttendance}
+                                            onChange={(e) => setNewStudentAttendance(e.target.value)}
+                                            placeholder="حضر 1 / 27"
+                                            className="w-full p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs text-slate-500 font-bold focus:outline-none cursor-not-allowed"
+                                        />
+                                    </div>
+
+                                </div>
+
+                                <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowAddStudentModal(false)}
+                                        className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                                    >
+                                        إلغاء
+                                    </button>
+
+                                    <button 
+                                        type="submit"
+                                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-100 transition-all"
+                                    >
+                                        إضافة الطالب لقاعدة البيانات
+                                    </button>
+                                </div>
+
+                            </form>
+                        </div>
+                    )}
+
+                </div>
+            );
+        }
+
+        // --- INJECTING APP DOM ROOT ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
