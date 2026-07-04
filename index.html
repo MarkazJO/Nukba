@@ -513,6 +513,21 @@
                 return dateStr >= startDate && dateStr <= endDate;
             };
 
+            const getRangeEdgesFromRaw = (raw) => {
+                if (typeof raw !== 'string') return null;
+
+                const numbers = (raw.match(/\d+/g) || [])
+                    .map(Number)
+                    .filter(n => Number.isFinite(n));
+
+                if (numbers.length === 0) return null;
+
+                return {
+                    start: Math.min(...numbers),
+                    end: Math.max(...numbers)
+                };
+            };
+
             const getPagesFromSessionItem = (sessionItem) => {
                 if (!sessionItem) return 0;
 
@@ -525,17 +540,9 @@
                     return Math.max(0, maxPage - minPage + 1);
                 }
 
-                if (typeof sessionItem.raw === 'string') {
-                    const rangeMatch = sessionItem.raw.match(/(\d+)\s*-\s*(\d+)/);
-                    if (rangeMatch) {
-                        const rawStart = Number(rangeMatch[1]);
-                        const rawEnd = Number(rangeMatch[2]);
-                        if (Number.isFinite(rawStart) && Number.isFinite(rawEnd)) {
-                            const minPage = Math.min(rawStart, rawEnd);
-                            const maxPage = Math.max(rawStart, rawEnd);
-                            return Math.max(0, maxPage - minPage + 1);
-                        }
-                    }
+                const rawEdges = getRangeEdgesFromRaw(sessionItem.raw);
+                if (rawEdges) {
+                    return Math.max(0, rawEdges.end - rawEdges.start + 1);
                 }
 
                 const fallbackPages = Number(sessionItem.pages ?? sessionItem.sheetPages ?? 0);
@@ -578,14 +585,9 @@
                     };
                 }
 
-                if (typeof sessionItem.raw === 'string') {
-                    const numbers = (sessionItem.raw.match(/\d+/g) || []).map(Number).filter(n => Number.isFinite(n));
-                    if (numbers.length > 0) {
-                        return {
-                            start: Math.min(...numbers),
-                            end: Math.max(...numbers)
-                        };
-                    }
+                const rawEdges = getRangeEdgesFromRaw(sessionItem.raw);
+                if (rawEdges) {
+                    return rawEdges;
                 }
 
                 return null;
@@ -828,13 +830,16 @@
 
                 const updatedStudents = data.students.map(student => {
                     if (student.id === parseInt(formStudentId)) {
+                        const newRawEdges = getRangeEdgesFromRaw(formNewRaw);
+                        const reviewRawEdges = getRangeEdgesFromRaw(formReviewRaw);
+
                         const newSession = {
                             date: formDate,
                             new: formNewRaw ? {
                                 type: "range",
                                 raw: formNewRaw,
-                                start: parseInt(formNewRaw.split('-')[0]) || 0,
-                                end: parseInt(formNewRaw.split('-')[1]) || 0,
+                                start: newRawEdges?.start || 0,
+                                end: newRawEdges?.end || 0,
                                 pages: parseFloat(formNewPages) || 1,
                                 grade: formNewGrade || null,
                                 sheetPages: parseFloat(formNewPages) || 1
@@ -842,8 +847,8 @@
                             review: formReviewRaw ? {
                                 type: "range",
                                 raw: formReviewRaw,
-                                start: parseInt(formReviewRaw.split('-')[0]) || 0,
-                                end: parseInt(formReviewRaw.split('-')[1]) || 0,
+                                start: reviewRawEdges?.start || 0,
+                                end: reviewRawEdges?.end || 0,
                                 pages: parseFloat(formReviewPages) || 1,
                                 grade: formReviewGrade || null,
                                 sheetPages: parseFloat(formReviewPages) || 1
@@ -1737,14 +1742,13 @@
                                             const activeItems = sessions.map(s => s[category]).filter(Boolean);
                                             if (activeItems.length === 0) return '---';
 
-                                            const starts = activeItems.map(item => item.start).filter(v => typeof v === 'number' && !isNaN(v));
-                                            const ends = activeItems.map(item => item.end).filter(v => typeof v === 'number' && !isNaN(v));
+                                            const bounds = activeItems
+                                                .map(item => getPageBoundsFromSessionItem(item))
+                                                .filter(Boolean);
 
-                                            const allHaveStartEnd = activeItems.every(item => typeof item.start === 'number' && typeof item.end === 'number');
-
-                                            if (allHaveStartEnd && starts.length > 0 && ends.length > 0) {
-                                                const minStart = Math.min(...starts);
-                                                const maxEnd = Math.max(...ends);
+                                            if (bounds.length > 0) {
+                                                const minStart = Math.min(...bounds.map(b => b.start));
+                                                const maxEnd = Math.max(...bounds.map(b => b.end));
                                                 if (minStart === maxEnd) return `${minStart}`;
                                                 return `${minStart}-${maxEnd}`;
                                             }
