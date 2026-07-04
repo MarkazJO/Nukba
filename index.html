@@ -572,7 +572,8 @@
                     if (sortBy === 'pages-desc') {
                         const getNewPagesInRange = (student) => {
                             return (student.history || []).reduce((acc, session) => {
-                                if (isDateInRange(session.date)) {
+                                // FIXED: Jadid pages shouldn't count Sunday Sard sessions
+                                if (isDateInRange(session.date) && !isSunday(session.date)) {
                                     return acc + (session.new?.pages || 0);
                                 }
                                 return acc;
@@ -598,7 +599,8 @@
 
                     student.history?.forEach(session => {
                         if (isDateInRange(session.date)) {
-                            if (session.new?.pages) {
+                            // FIXED: Jadid shouldn't count Sard days (Sundays)
+                            if (session.new?.pages && !isSunday(session.date)) {
                                 totalNew += parseFloat(session.new.pages);
                             }
                             if (session.review?.pages) {
@@ -904,8 +906,8 @@
                 const sundaySessions = filteredHistory.filter(session => isSunday(session.date));
                 const weekdaySessions = filteredHistory.filter(session => !isSunday(session.date));
 
-                const sundayReviewPages = sundaySessions.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0);
-                const totalNewPages = weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0) + sundayReviewPages;
+                // FIXED: Jadid shouldn't count Sunday Sard sessions
+                const totalNewPages = weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
                 const totalReviewPages = weekdaySessions.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0);
                 const totalSardNew = sundaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
 
@@ -1664,6 +1666,7 @@
                                             return uniqueRaws.join(' ، ');
                                         };
 
+                                        // FIXED: Outer page metric matches weekday only for Jadid
                                         const totalNewPagesInRange = weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0);
                                         const totalReviewPagesInRange = weekdaySessions.reduce((acc, curr) => acc + (curr.review?.pages || 0), 0);
 
@@ -1843,7 +1846,7 @@
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الاسم</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">المجموعة</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">حفظ جديد</th>
-                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">مراجعة</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">المراجعة</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">سرد</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الهدف</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الإنجاز</th>
@@ -2137,6 +2140,7 @@
                     {selectedStudent && (() => {
                         const totalHistory = selectedStudent.history || [];
                         const filteredHistory = totalHistory.filter(session => isDateInRange(session.date));
+                        const weekdaySessions = filteredHistory.filter(session => !isSunday(session.date));
                         const studentGroup = selectedStudent.group || selectedStudent.level || '---';
                         const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
                         
@@ -2183,7 +2187,8 @@
                                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center">
                                                 <span className="text-[10px] font-bold text-slate-400 mb-1">حفظ جديد بالنطاق</span>
                                                 <span className="sm:text-lg md:text-2xl font-black text-indigo-600 font-mono">
-                                                    {filteredHistory.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0).toFixed(1)}
+                                                    {/* FIXED: Modal matches card and strictly excludes Sunday Sard sessions */}
+                                                    {weekdaySessions.reduce((acc, curr) => acc + (curr.new?.pages || 0), 0).toFixed(1)}
                                                 </span>
                                                 <span className="text-[10px] font-bold text-slate-400 mt-1">صفحة فعلية</span>
                                             </div>
