@@ -1,87 +1,118 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="https://github.com/MarkazJO/Nukba/blob/main/nukbaLogo.png?raw=true">
+
+                                        {filteredHistory.length === 0 ? (
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة متابعة التسميع والحفظ الذكية</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Cairo', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Google Fonts: Cairo -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <!-- React & Babel UMD CDNs -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+                                        {studentHistoryWithIndex.map(({ session, idx }) => {
+                                            const sunday = isSunday(session.date);
+                                            const split = sessionSplitStats[idx] || {};
+                                            const jadidRaw = formatBounds(split.jadidBounds) || (session.new?.raw ?? '---');
+                                            const jadidPages = (split.jadidPages || 0).toFixed(1);
+                                            const sardRaw = formatBounds(split.sardBounds) || (session.new && split.sardPages ? session.new.raw : null);
+                                            const sardPages = (split.sardPages || 0).toFixed(1);
 
-    <style>
-        body {
-            font-family: 'Cairo', sans-serif;
-        }
-        /* Custom smooth scrollbar styles */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #F1F5F9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #CBD5E1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94A3B8;
-        }
-    </style>
-</head>
-<body class="bg-[#F8FAFC] text-slate-800 antialiased">
-    <div id="root"></div>
+                                            return (
+                                                <div key={idx} className="relative space-y-2">
+                                                    <div className="absolute right-[-31px] top-1.5 w-4.5 h-4.5 rounded-full bg-indigo-50 border-2 border-indigo-500 flex items-center justify-center">
+                                                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                                    </div>
 
-    <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-indigo-600 font-mono bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                                            {session.date}
+                                                        </span>
+                                                        {sunday && (
+                                                            <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+                                                                جلسة سرد الأحد التثبيتية
+                                                            </span>
+                                                        )}
+                                                        {session.attendance && (
+                                                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                                                                session.attendance.present 
+                                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                                                    : 'bg-red-50 text-red-700 border-red-100'
+                                                            }`}>
+                                                                {session.attendance.status}
+                                                            </span>
+                                                        )}
+                                                    </div>
 
-        // ==========================================
-        // INDEPENDENT SVG COMPONENT ICONS 
-        // ==========================================
-        const BookOpen = ({ size = 20, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-        );
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/70">
+                                                        <div className="text-xs space-y-2">
+                                                            {split.jadidPages > 0 ? (
+                                                                <div>
+                                                                    <span className="text-slate-400 block mb-1 font-bold">الحفظ الجديد</span>
+                                                                    <div className="flex justify-between bg-white px-3 py-2 rounded-xl border border-slate-100">
+                                                                        <span className="font-bold text-slate-700 font-mono">{jadidRaw}</span>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                                {jadidPages} ص
+                                                                            </span>
+                                                                            {session.new?.grade && (
+                                                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${getGradePillClass(session.new.grade)}`}>
+                                                                                    {session.new.grade}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-slate-400 italic">لم يتم تسجيل حفظ جديد في هذا اليوم</span>
+                                                            )}
 
-        const BookMarked = ({ size = 20, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                <path d="m9 9.5 2 2 4-4" />
-            </svg>
-        );
+                                                            {split.sardPages > 0 && (
+                                                                <div>
+                                                                    <div className="flex justify-between items-center">
+                                                                        <span className="text-purple-600 block mb-1 font-bold">سرد</span>
+                                                                        {session.new?.grade && (
+                                                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getGradePillClass(session.new.grade)}`}>
+                                                                                {session.new.grade}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex justify-between bg-purple-50/30 px-3 py-2 rounded-xl border border-purple-100">
+                                                                        <span className="font-bold text-purple-700 font-mono">{sardRaw}</span>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="bg-purple-100 text-purple-800 border border-purple-200/50 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                                {sardPages} ص
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
 
-        const TrendingUp = ({ size = 20, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-            </svg>
-        );
-
-        const Award = ({ size = 20, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <circle cx="12" cy="8" r="7" />
-                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+                                                        <div className="text-xs">
+                                                            <span className="text-slate-400 block mb-1 font-bold">المراجعة</span>
+                                                            {(() => {
+                                                                const reviewItem = session.review;
+                                                                return reviewItem ? (
+                                                                <div className="flex justify-between bg-white px-3 py-2 rounded-xl border border-slate-100">
+                                                                    <span className="font-bold text-slate-700 font-mono">{reviewItem.raw}</span>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                            {getReviewPagesForSession(session).toFixed(1)} ص
+                                                                        </span>
+                                                                        {reviewItem.grade && (
+                                                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${getGradePillClass(reviewItem.grade)}`}>
+                                                                                {reviewItem.grade}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                ) : (
+                                                                <span className="text-slate-400 italic">لا توجد مراجعات مسجلة في هذا اليوم</span>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
             </svg>
         );
 
@@ -368,6 +399,7 @@
             const [jsonText, setJsonText] = useState(JSON.stringify(initialData, null, 2));
             const [jsonError, setJsonError] = useState(null);
             const [isLoading, setIsLoading] = useState(false);
+            const [hasReceivedInitialJson, setHasReceivedInitialJson] = useState(false);
             const [showTroubleshooting, setShowTroubleshooting] = useState(false);
             const [fetchErrorDetail, setFetchErrorDetail] = useState('');
             
@@ -433,6 +465,7 @@
                         if (parsedPayload && parsedPayload.students) {
                             console.log('🔄 Live data fetched from API:', parsedPayload);
                             updateMainData(parsedPayload);
+                            setHasReceivedInitialJson(true);
                             triggerNotification('تم تحديث البيانات المباشرة بنجاح!', 'success');
                             setFetchErrorDetail('');
                         } else {
@@ -678,85 +711,114 @@
 
                     student.history?.forEach(session => {
                         if (isDateInRange(session.date)) {
-                            if (!isSunday(session.date)) {
-                                totalNew += getSessionPages(session, 'new');
-                            }
-                            totalReview += getReviewPagesForSession(session);
-                        }
-                    });
-                });
+                                                    {filteredEntries.map(({ session, idx }) => {
+                                                        const sunday = isSunday(session.date);
+                                                        const split = sessionSplitStats[idx] || {};
+                                                        const jadidRaw = formatBounds(split.jadidBounds) || (session.new?.raw ?? '---');
+                                                        const jadidPages = (split.jadidPages || 0).toFixed(1);
+                                                        const sardRaw = formatBounds(split.sardBounds) || (session.new && split.sardPages ? session.new.raw : null);
+                                                        const sardPages = (split.sardPages || 0).toFixed(1);
 
-                const targetAchieved = totalTarget > 0 ? Math.round((totalNew / totalTarget) * 100) : 0;
-                const boundedTarget = Math.min(100, Math.max(0, targetAchieved));
+                                                        return (
+                                                            <div key={idx} className="relative space-y-2">
+                                                                <div className="absolute right-[-31px] top-1.5 w-4.5 h-4.5 rounded-full bg-indigo-50 border-2 border-indigo-500 flex items-center justify-center">
+                                                                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                                                </div>
 
-                return {
-                    totalNew: totalNew.toFixed(1),
-                    totalReview: totalReview.toFixed(1),
-                    achievementRate: boundedTarget
-                };
-            }, [processedStudents, startDate, endDate]);
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-xs font-black text-indigo-600 font-mono bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                                                            {session.date}
+                                                                        </span>
+                                                                        {sunday && (
+                                                                            <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+                                                                                جلسة سرد
+                                                                            </span>
+                                                                        )}
+                                                                        {session.attendance && (
+                                                                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                                                                                session.attendance.present 
+                                                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                                                                    : 'bg-red-50 text-red-700 border-red-100'
+                                                                            }`}>
+                                                                                {session.attendance.status}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
 
-            const overallWarnings = useMemo(() => {
-                const totals = { "حفظ": 0, "إقراء": 0, "سلوك": 0, "غياب": 0 };
-                processedStudents.forEach(student => {
-                    if (student.warnings) {
-                        Object.entries(student.warnings).forEach(([type, count]) => {
-                            if (totals[type] !== undefined) totals[type] += (count || 0);
-                        });
-                    }
-                });
-                return totals;
-            }, [processedStudents]);
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/70">
+                                                                    <div className="text-xs space-y-2">
+                                                                        {split.jadidPages > 0 ? (
+                                                                            <div>
+                                                                                <span className="text-slate-400 block mb-1 font-bold">الحفظ الجديد</span>
+                                                                                <div className="flex justify-between bg-white px-3 py-2 rounded-xl border border-slate-100">
+                                                                                    <span className="font-bold text-slate-700 font-mono">{jadidRaw}</span>
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                                            {jadidPages} ص
+                                                                                        </span>
+                                                                                        {session.new?.grade && (
+                                                                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${getGradePillClass(session.new.grade)}`}>
+                                                                                                {session.new.grade}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 italic">لم يحفظ جديداً</span>
+                                                                        )}
 
-            // Role assigners
-            const handleRoleLogin = (role) => {
-                setCurrentUserRole(role);
-                setIsLoggedIn(true);
-                setStudentLoginError('');
-                setStudentLoginInput('');
+                                                                        {split.sardPages > 0 && (
+                                                                            <div>
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-purple-600 block mb-1 font-bold">سرد</span>
+                                                                                    {session.new?.grade && (
+                                                                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getGradePillClass(session.new.grade)}`}>
+                                                                                            {session.new.grade}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex justify-between bg-purple-50/30 px-3 py-2 rounded-xl border border-purple-100">
+                                                                                    <span className="font-bold text-purple-700 font-mono">{sardRaw}</span>
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <span className="bg-purple-100 text-purple-800 border border-purple-200/50 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                                            {sardPages} ص
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
 
-                if (role === 'nokhba1') {
-                    setSelectedLevel('نخبة١');
-                } else if (role === 'nokhba2') {
-                    setSelectedLevel('نخبة٢');
-                } else {
-                    setSelectedLevel('all');
-                }
-
-                triggerNotification(`مرحباً بك! تم تسجيل الدخول كـ ${role === 'admin' ? 'مشرف عام' : role === 'nokhba1' ? 'معلم نخبة ١' : 'معلم نخبة ٢'}`, 'success');
-            };
-
-            // Intelligent student identity matcher
-            const handleStudentNameLoginSubmit = (e) => {
-                e.preventDefault();
-                setStudentLoginError('');
-
-                const query = studentLoginInput.trim().toLowerCase();
-                if (!query) {
-                    setStudentLoginError('الرجاء كتابة الاسم للتمكن من الدخول.');
-                    return;
-                }
-
-                if (query === 'admin') {
-                    handleRoleLogin('admin');
-                    return;
-                }
-                if (query === 'nukba1' || query === 'nokhba1' || query === 'نخبة١' || query === 'نخبه١') {
-                    handleRoleLogin('nokhba1');
-                    return;
-                }
-                if (query === 'nukba2' || query === 'nokhba2' || query === 'نخبة٢' || query === 'نخبه٢') {
-                    handleRoleLogin('nokhba2');
-                    return;
-                }
-
-                const queryWords = query.split(/\s+/).filter(w => w.length > 0);
-
-                if (queryWords.length === 1) {
-                    const singleWord = queryWords[0];
-
-                    const firstNameMatches = data.students.filter(student => {
-                        const studentFirstName = student.name.trim().split(/\s+/)[0].toLowerCase();
+                                                                    <div className="text-xs">
+                                                                        <span className="text-slate-400 block mb-1 font-bold">المراجعة</span>
+                                                                        {(() => {
+                                                                            const reviewItem = session.review;
+                                                                            return reviewItem ? (
+                                                                            <div className="flex justify-between bg-white px-3 py-2 rounded-xl border border-slate-100">
+                                                                                <span className="font-bold text-slate-700 font-mono">{reviewItem.raw}</span>
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <span className="bg-purple-50 text-purple-700 border border-purple-100/80 px-2.5 py-1 rounded-lg text-xs font-black font-mono whitespace-nowrap">
+                                                                                        {getReviewPagesForSession(session).toFixed(1)} ص
+                                                                                    </span>
+                                                                                    {reviewItem.grade && (
+                                                                                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap ${getGradePillClass(reviewItem.grade)}`}>
+                                                                                            {reviewItem.grade}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            ) : (
+                                                                            <span className="text-slate-400 italic">لا مراجعة في الجلسة</span>
+                                                                            );
+                                                                        })()}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
                         return studentFirstName === singleWord;
                     });
 
@@ -910,6 +972,44 @@
                 setShowAddStudentModal(false);
                 triggerNotification('تم إضافة الطالب الجديد لقائمة المتابعة');
             };
+
+            if (!hasReceivedInitialJson) {
+                return (
+                    <div className="min-h-screen bg-[#0F172A] text-slate-100 flex items-center justify-center p-4 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+                        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
+
+                        <div className="max-w-md w-full relative z-10">
+                            <div className="bg-slate-900 border border-slate-800/80 rounded-[2.5rem] p-8 space-y-6 shadow-2xl text-center">
+                                <div className="inline-flex p-3 bg-indigo-600 rounded-3xl text-white shadow-xl shadow-indigo-600/30 select-none">
+                                    <RefreshCw size={28} className={`${isLoading ? 'animate-spin' : ''}`} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-black text-white leading-tight">جاري تحميل بيانات الحلقة</h2>
+                                    <p className="text-xs text-slate-400">ننتظر استلام ملف JSON قبل عرض المنظومة</p>
+                                </div>
+
+                                {fetchErrorDetail && (
+                                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-right">
+                                        <p className="text-xs text-red-200 font-bold">تعذر استلام JSON من المصدر.</p>
+                                        <p className="text-[11px] text-red-300/90 mt-1 font-mono break-all" dir="ltr">{fetchErrorDetail}</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={loadLiveData}
+                                    disabled={isLoading}
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800/60 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-xl text-xs transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-2"
+                                >
+                                    <RefreshCw size={15} className={`${isLoading ? 'animate-spin' : ''}`} />
+                                    <span>{isLoading ? 'جاري المحاولة...' : 'إعادة المحاولة'}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
 
             // ==========================================
             // SUB-VIEW: LOGIN SPLASH SCREEN
@@ -1988,10 +2088,31 @@
                                                                 </div>
                                                             </td>
                                                             <td className="px-4 py-3">
-                                                                <div className="flex items-center gap-1">
-                                                                    <span className="font-black text-slate-800">{totalSardNewPages.toFixed(1)}</span>
-                                                                    <span className="text-[10px] text-slate-400">ص</span>
-                                                                </div>
+                                                                {(() => {
+                                                                    const sardSessionsForGrade = sundaySessions;
+                                                                    const currentSardGrade = calculateMeanGrade(sardSessionsForGrade, 'new');
+                                                                    return (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="flex items-center gap-1">
+                                                                                                <span className="font-black text-slate-800">{totalSardNewPages.toFixed(1)}</span>
+                                                                                                    <span className="text-[10px] text-slate-400">ص</span>
+                                                                                                {(() => {
+                                                                                                    const currentSardGradeCell = calculateMeanGrade(sundaySessions, 'new');
+                                                                                                    return currentSardGradeCell ? (
+                                                                                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getGradePillClass(currentSardGradeCell)}`}>
+                                                                                                            {currentSardGradeCell}
+                                                                                                        </span>
+                                                                                                    ) : null;
+                                                                                                })()}
+                                                                            </div>
+                                                                            {currentSardGrade && (
+                                                                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getGradePillClass(currentSardGrade)}`}>
+                                                                                    {currentSardGrade}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <span className="font-black text-slate-800">{targetPages}</span>
