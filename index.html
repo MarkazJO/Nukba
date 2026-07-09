@@ -847,6 +847,47 @@
                 return totals;
             }, [processedStudents]);
 
+            const subgroupLeaderboard = useMemo(() => {
+                if (!data.students) return [];
+
+                const scopedStudents = selectedLevel === 'all'
+                    ? data.students
+                    : data.students.filter(student => (student.group || student.level) === selectedLevel);
+
+                const subgroupTotals = new Map();
+
+                scopedStudents.forEach(student => {
+                    const subGroup = student.subGroup || 'غير محدد';
+                    const history = student.history || [];
+                    const splitStats = getSessionSplitStatsByIndex(history);
+
+                    if (!subgroupTotals.has(subGroup)) {
+                        subgroupTotals.set(subGroup, {
+                            subGroup,
+                            jadid: 0,
+                            review: 0,
+                            studentsCount: 0
+                        });
+                    }
+
+                    const bucket = subgroupTotals.get(subGroup);
+                    bucket.studentsCount += 1;
+
+                    history.forEach((session, idx) => {
+                        if (!isDateInRange(session.date)) return;
+                        bucket.jadid += (splitStats[idx]?.jadidPages || 0);
+                        bucket.review += getReviewPagesForSession(session);
+                    });
+                });
+
+                return [...subgroupTotals.values()]
+                    .map(item => ({
+                        ...item,
+                        score: (item.jadid + item.review) / 2
+                    }))
+                    .sort((a, b) => b.score - a.score);
+            }, [data.students, selectedLevel, startDate, endDate]);
+
             // Role assigners
             const handleRoleLogin = (role) => {
                 setCurrentUserRole(role);
@@ -1823,53 +1864,95 @@
                                     </button>
                                 </div>
                                 
-                                {/* --- TOP 3 KPI CARDS - DYNAMICALLY TIED TO ACTIVE FILTERS --- */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    
-                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
-                                        <div className="flex flex-col justify-between h-full">
-                                            <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">إجمالي حفظ الجديد للطلاب الظاهرين</span>
-                                            <div className="flex items-baseline gap-1.5">
-                                                <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
-                                                    {overallMetrics.totalNew}
-                                                </span>
-                                                <span className="text-xs font-bold text-slate-400">صفحة</span>
+                                {/* --- KPI + SUBGROUP LEADERBOARD --- */}
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
+                                            <div className="flex flex-col justify-between h-full">
+                                                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">إجمالي حفظ الجديد للطلاب الظاهرين</span>
+                                                <div className="flex items-baseline gap-1.5">
+                                                    <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
+                                                        {overallMetrics.totalNew}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-slate-400">صفحة</span>
+                                                </div>
+                                            </div>
+                                            <div className="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                                <Check size={24} className="stroke-[3]" />
                                             </div>
                                         </div>
-                                        <div className="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform">
-                                            <Check size={24} className="stroke-[3]" />
+
+                                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
+                                            <div className="flex flex-col justify-between h-full">
+                                                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">إجمالي مراجعة الطلاب الظاهرين</span>
+                                                <div className="flex items-baseline gap-1.5">
+                                                    <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
+                                                        {overallMetrics.totalReview}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-slate-400">صفحة</span>
+                                                </div>
+                                            </div>
+                                            <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                                <TrendingUp size={24} className="stroke-[2.5]" />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
+                                            <div className="flex flex-col justify-between h-full">
+                                                <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">نسبة الإنجاز للطلاب الظاهرين</span>
+                                                <div className="flex items-baseline gap-1.5">
+                                                    <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
+                                                        {overallMetrics.achievementRate}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="p-3 bg-amber-50 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                                <Award size={24} className="stroke-[2.5]" />
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
-                                        <div className="flex flex-col justify-between h-full">
-                                            <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">إجمالي مراجعة الطلاب الظاهرين</span>
-                                            <div className="flex items-baseline gap-1.5">
-                                                <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
-                                                    {overallMetrics.totalReview}
-                                                </span>
-                                                <span className="text-xs font-bold text-slate-400">صفحة</span>
-                                            </div>
+                                    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                                            <h3 className="text-xs font-black text-slate-800">Leaderboard الأفواج الفرعية</h3>
+                                            <span className="text-[10px] text-slate-400 font-bold">النقاط = (الجديد + المراجعة) / 2</span>
                                         </div>
-                                        <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
-                                            <TrendingUp size={24} className="stroke-[2.5]" />
-                                        </div>
-                                    </div>
 
-                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex justify-between items-start h-36 group">
-                                        <div className="flex flex-col justify-between h-full">
-                                            <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">نسبة الإنجاز للطلاب الظاهرين</span>
-                                            <div className="flex items-baseline gap-1.5">
-                                                <span className="sm:text-xl md:text-3xl font-black tracking-tight text-slate-900 font-mono">
-                                                    {overallMetrics.achievementRate}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="p-3 bg-amber-50 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform">
-                                            <Award size={24} className="stroke-[2.5]" />
-                                        </div>
-                                    </div>
+                                        {subgroupLeaderboard.length === 0 ? (
+                                            <p className="text-xs text-slate-400 py-4 text-center">لا توجد بيانات ضمن النطاق المحدد.</p>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+                                                {subgroupLeaderboard.map((item, idx) => (
+                                                    <div key={item.subGroup} className="p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-slate-50 transition-colors">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black ${
+                                                                idx === 0
+                                                                    ? 'bg-amber-100 text-amber-800'
+                                                                    : idx === 1
+                                                                        ? 'bg-slate-200 text-slate-700'
+                                                                        : idx === 2
+                                                                            ? 'bg-orange-100 text-orange-700'
+                                                                            : 'bg-slate-100 text-slate-600'
+                                                            }`}>
+                                                                {idx + 1}
+                                                            </span>
+                                                            <span className="text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg font-mono whitespace-nowrap">
+                                                                {item.score.toFixed(1)}
+                                                            </span>
+                                                        </div>
 
+                                                        <p className="mt-2 text-sm font-black text-slate-800 truncate" title={item.subGroup}>{item.subGroup}</p>
+                                                        <p className="text-[10px] text-slate-500 font-bold mt-0.5">{item.studentsCount} طالب</p>
+
+                                                        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-bold">
+                                                            <span>جديد: {item.jadid.toFixed(1)} ص</span>
+                                                            <span>مراجعة: {item.review.toFixed(1)} ص</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* --- SEARCH, DYNAMIC DATE FILTER, SORT BAR --- */}
