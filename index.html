@@ -381,6 +381,7 @@
             const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
             const [searchQuery, setSearchQuery] = useState('');
             const [selectedLevel, setSelectedLevel] = useState('all'); // Nokhba filters
+            const [selectedSubGroup, setSelectedSubGroup] = useState('all'); // Sub-group filters
             const [sortBy, setSortBy] = useState('name-asc'); // Sorting orders
             const [selectedStudent, setSelectedStudent] = useState(null); // Detail modal student
             const [showAddSessionModal, setShowAddSessionModal] = useState(false);
@@ -504,6 +505,7 @@
                         setStartDate('2026-06-21');
                         setEndDate('2026-07-02');
                         setSelectedLevel('all');
+                        setSelectedSubGroup('all');
                         setShowTroubleshooting(false);
                         triggerNotification('تمت إعادة تعيين البيانات بنجاح', 'info');
                     }
@@ -738,6 +740,26 @@
                 return [...new Set(groups)].sort();
             }, [data.students]);
 
+            const dynamicSubGroupsList = useMemo(() => {
+                if (!data.students) return [];
+
+                const scopedStudents = selectedLevel === 'all'
+                    ? data.students
+                    : data.students.filter(student => (student.group || student.level) === selectedLevel);
+
+                const subGroups = scopedStudents
+                    .map(student => student.subGroup)
+                    .filter(Boolean);
+
+                return [...new Set(subGroups)].sort((a, b) => a.localeCompare(b, 'ar'));
+            }, [data.students, selectedLevel]);
+
+            useEffect(() => {
+                if (selectedSubGroup !== 'all' && !dynamicSubGroupsList.includes(selectedSubGroup)) {
+                    setSelectedSubGroup('all');
+                }
+            }, [selectedSubGroup, dynamicSubGroupsList]);
+
             const processedStudents = useMemo(() => {
                 if (!data.students) return [];
 
@@ -751,6 +773,10 @@
 
                 if (selectedLevel !== 'all') {
                     list = list.filter(student => (student.group || student.level) === selectedLevel);
+                }
+
+                if (selectedSubGroup !== 'all') {
+                    list = list.filter(student => student.subGroup === selectedSubGroup);
                 }
 
                 list.sort((a, b) => {
@@ -777,7 +803,7 @@
                 });
 
                 return list;
-            }, [data.students, searchQuery, selectedLevel, sortBy, startDate, endDate]);
+            }, [data.students, searchQuery, selectedLevel, selectedSubGroup, sortBy, startDate, endDate]);
 
             // Consolidated analytical KPI stats (Filtered)
             const overallMetrics = useMemo(() => {
@@ -835,6 +861,7 @@
                 } else {
                     setSelectedLevel('all');
                 }
+                setSelectedSubGroup('all');
 
                 triggerNotification(`مرحباً بك! تم تسجيل الدخول كـ ${role === 'admin' ? 'مشرف عام' : role === 'nokhba1' ? 'معلم نخبة ١' : 'معلم نخبة ٢'}`, 'success');
             };
@@ -931,7 +958,25 @@
                 setCurrentUserRole(null);
                 setLoggedInStudent(null);
                 setSelectedStudent(null);
+                setSelectedSubGroup('all');
                 triggerNotification('تم تسجيل الخروج بنجاح. نتمنى لك يوماً سعيداً!', 'info');
+            };
+
+            const getLatestIqraaNote = (history = []) => {
+                if (!Array.isArray(history) || history.length === 0) return '';
+
+                const latestWithNote = history
+                    .map((session, idx) => ({ session, idx }))
+                    .filter(({ session }) => typeof session?.iqraaNote === 'string' && session.iqraaNote.trim() !== '')
+                    .sort((a, b) => {
+                        const dateA = a.session?.date || '';
+                        const dateB = b.session?.date || '';
+                        if (dateA === dateB) return a.idx - b.idx;
+                        return dateA.localeCompare(dateB);
+                    })
+                    .at(-1);
+
+                return latestWithNote?.session?.iqraaNote?.trim() || '';
             };
 
             const handleAddSessionSubmit = (e) => {
@@ -1130,7 +1175,10 @@
             // ==========================================
             if (currentUserRole === 'student' && loggedInStudent) {
                 const studentGroup = loggedInStudent.group || loggedInStudent.level || '---';
+                const studentSubGroup = loggedInStudent.subGroup || '---';
+                const studentSubGroupLeader = loggedInStudent.subGroupLeader || '---';
                 const studentHistory = loggedInStudent.history || [];
+                const latestIqraaNote = getLatestIqraaNote(studentHistory);
                 const studentHistoryWithIndex = studentHistory.map((session, idx) => ({ session, idx }));
                 const sessionSplitStats = getSessionSplitStatsByIndex(studentHistory);
                 const filteredEntries = studentHistoryWithIndex.filter(({ session }) => isDateInRange(session.date));
@@ -1202,6 +1250,17 @@
                             <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 space-y-4">
                                 <div>
                                     <h2 className="sm:text-xl md:text-3xl font-black text-slate-900">{loggedInStudent.name}</h2>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100/40 text-[11px] font-black">
+                                            {studentGroup}
+                                        </span>
+                                        <span className="px-2.5 py-1 bg-sky-50 text-sky-700 rounded-lg border border-sky-100/50 text-[11px] font-black">
+                                            {studentSubGroup}
+                                        </span>
+                                        <span className="px-2.5 py-1 bg-amber-50 text-amber-800 rounded-lg border border-amber-100/60 text-[11px] font-black">
+                                            القائد: {studentSubGroupLeader}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {(() => {
@@ -1261,6 +1320,16 @@
                                         <h4 className="text-xs font-black text-blue-900">ملاحظات من المعلم</h4>
                                     </div>
                                     <p className="text-xs text-blue-800 font-medium whitespace-pre-wrap">{loggedInStudent.notes}</p>
+                                </div>
+                            )}
+
+                            {latestIqraaNote && (
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Info size={16} className="text-emerald-600" />
+                                        <h4 className="text-xs font-black text-emerald-900">آخر ملاحظة إقراء</h4>
+                                    </div>
+                                    <p className="text-xs text-emerald-800 font-medium whitespace-pre-wrap">{latestIqraaNote}</p>
                                 </div>
                             )}
 
@@ -1867,6 +1936,20 @@
                                         </div>
 
                                         <div className="flex items-center gap-1">
+                                            <Filter size={14} className="text-slate-400" />
+                                            <select
+                                                value={selectedSubGroup}
+                                                onChange={(e) => setSelectedSubGroup(e.target.value)}
+                                                className="bg-[#F8FAFC] border border-slate-100 hover:bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 focus:outline-none cursor-pointer"
+                                            >
+                                                <option value="all">كل الأفواج الفرعية</option>
+                                                {dynamicSubGroupsList.map(subGrp => (
+                                                    <option key={subGrp} value={subGrp}>{subGrp}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
                                             <ArrowUpDown size={14} className="text-slate-400" />
                                             <select 
                                                 value={sortBy}
@@ -1989,6 +2072,16 @@
                                                             <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100/30 font-black">
                                                                 {studentGroup}
                                                             </span>
+                                                                {student.subGroup && (
+                                                                    <span className="px-2 py-1 bg-sky-50 text-sky-700 rounded-lg border border-sky-100/50 font-black">
+                                                                        {student.subGroup}
+                                                                    </span>
+                                                                )}
+                                                                {student.subGroupLeader && (
+                                                                    <span className="px-2 py-1 bg-amber-50 text-amber-800 rounded-lg border border-amber-100/60 font-black">
+                                                                        القائد: {student.subGroupLeader}
+                                                                    </span>
+                                                                )}
                                                         </div>
                                                     </div>
 
@@ -2125,6 +2218,8 @@
                                                 <tr className="border-b-2 border-slate-200 bg-slate-50">
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الاسم</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">المجموعة</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">الفوج</th>
+                                                    <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">قائد الفوج</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">حفظ جديد</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">المراجعة</th>
                                                     <th className="px-4 py-3 font-black text-slate-700 text-xs text-right">سرد</th>
@@ -2166,6 +2261,16 @@
                                                             <td className="px-4 py-3">
                                                                 <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-black border border-indigo-100/30">
                                                                     {studentGroup}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <span className="px-2.5 py-1 bg-sky-50 text-sky-700 rounded-lg text-xs font-black border border-sky-100/50">
+                                                                    {student.subGroup || '—'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <span className="px-2.5 py-1 bg-amber-50 text-amber-800 rounded-lg text-xs font-black border border-amber-100/60">
+                                                                    {student.subGroupLeader || '—'}
                                                                 </span>
                                                             </td>
                                                             <td className="px-4 py-3">
@@ -2427,6 +2532,9 @@
                         const filteredEntries = totalHistoryWithIndex.filter(({ session }) => isDateInRange(session.date));
                         const filteredHistory = filteredEntries.map(({ session }) => session);
                         const studentGroup = selectedStudent.group || selectedStudent.level || '---';
+                        const studentSubGroup = selectedStudent.subGroup || '---';
+                        const studentSubGroupLeader = selectedStudent.subGroupLeader || '---';
+                        const latestIqraaNote = getLatestIqraaNote(totalHistory);
                         const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
                         const totalNewPagesInRange = filteredEntries.reduce((acc, { idx }) => acc + (sessionSplitStats[idx]?.jadidPages || 0), 0);
                         
@@ -2440,7 +2548,17 @@
                                                 سجل الطالب التفصيلي
                                             </span>
                                             <h3 className="text-xl font-black mt-2">{selectedStudent.name}</h3>
-                                            <p className="text-xs text-slate-400 mt-1">المجموعة: {studentGroup}</p>
+                                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                                                <span className="px-2 py-0.5 bg-indigo-500/25 text-indigo-200 rounded-md font-bold border border-indigo-300/20">
+                                                    المجموعة: {studentGroup}
+                                                </span>
+                                                <span className="px-2 py-0.5 bg-sky-500/20 text-sky-200 rounded-md font-bold border border-sky-300/20">
+                                                    الفوج: {studentSubGroup}
+                                                </span>
+                                                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-200 rounded-md font-bold border border-amber-300/20">
+                                                    القائد: {studentSubGroupLeader}
+                                                </span>
+                                            </div>
                                         </div>
                                         <button 
                                             onClick={() => setSelectedStudent(null)}
@@ -2459,6 +2577,16 @@
                                                     <h4 className="text-xs font-black text-blue-900">ملاحظات</h4>
                                                 </div>
                                                 <p className="text-xs text-blue-800 font-medium whitespace-pre-wrap">{selectedStudent.notes}</p>
+                                            </div>
+                                        )}
+
+                                        {latestIqraaNote && (
+                                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Info size={16} className="text-emerald-600" />
+                                                    <h4 className="text-xs font-black text-emerald-900">آخر ملاحظة إقراء</h4>
+                                                </div>
+                                                <p className="text-xs text-emerald-800 font-medium whitespace-pre-wrap">{latestIqraaNote}</p>
                                             </div>
                                         )}
 
