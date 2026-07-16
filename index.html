@@ -657,6 +657,8 @@
                 "جيد": 30
             };
 
+            const NUKBA2_POINTS_MULTIPLIER = 2;
+
             const roundPoints = (value) => {
                 if (!Number.isFinite(value)) return 0;
                 return Math.round(value * 10) / 10;
@@ -688,15 +690,26 @@
                 return TEST_POINTS_BY_GRADE[normalized] || 0;
             };
 
-            const getSessionPointsBreakdown = (session, splitStats) => {
+            const getGroupPointsMultiplier = (groupName) => {
+                const normalizedGroup = typeof groupName === 'string'
+                    ? groupName.replace(/\s+/g, '')
+                    : '';
+
+                return (normalizedGroup === 'نخبة٢' || normalizedGroup === 'نخبة2')
+                    ? NUKBA2_POINTS_MULTIPLIER
+                    : 1;
+            };
+
+            const getSessionPointsBreakdown = (session, splitStats, studentGroup) => {
                 const jadidPages = splitStats?.jadidPages || 0;
                 const sardPages = splitStats?.sardPages || 0;
                 const reviewPages = getReviewPagesForSession(session);
+                const pointsMultiplier = getGroupPointsMultiplier(studentGroup);
 
-                const newPoints = calculateJadidPoints(jadidPages, session?.new?.grade);
+                const newPoints = roundPoints(calculateJadidPoints(jadidPages, session?.new?.grade) * pointsMultiplier);
                 const reviewPoints = 0;
-                const sardPoints = calculatePagesPoints(sardPages, session?.new?.grade);
-                const testPoints = calculateTestPoints(session?.test?.grade);
+                const sardPoints = roundPoints(calculatePagesPoints(sardPages, session?.new?.grade) * pointsMultiplier);
+                const testPoints = roundPoints(calculateTestPoints(session?.test?.grade) * pointsMultiplier);
 
                 return {
                     newPoints,
@@ -707,9 +720,9 @@
                 };
             };
 
-            const getStudentPointsSummary = (entries, splitStatsByIndex) => {
+            const getStudentPointsSummary = (entries, splitStatsByIndex, studentGroup) => {
                 return entries.reduce((acc, { session, idx }) => {
-                    const sessionPoints = getSessionPointsBreakdown(session, splitStatsByIndex[idx] || {});
+                    const sessionPoints = getSessionPointsBreakdown(session, splitStatsByIndex[idx] || {}, studentGroup);
                     acc.newPoints += sessionPoints.newPoints;
                     acc.reviewPoints += sessionPoints.reviewPoints;
                     acc.sardPoints += sessionPoints.sardPoints;
@@ -1361,7 +1374,7 @@
                 const totalNewPages = filteredEntries.reduce((acc, { idx }) => acc + (sessionSplitStats[idx]?.jadidPages || 0), 0);
                 const totalReviewPages = filteredHistory.reduce((acc, curr) => acc + getReviewPagesForSession(curr), 0);
                 const totalSardNew = sundayEntries.reduce((acc, { idx }) => acc + (sessionSplitStats[idx]?.sardPages || 0), 0);
-                const studentPointsSummary = getStudentPointsSummary(filteredEntries, sessionSplitStats);
+                const studentPointsSummary = getStudentPointsSummary(filteredEntries, sessionSplitStats, studentGroup);
                 const studentSpentTotal = getStudentSpentTotal(loggedInStudent);
                 const studentNetPoints = roundPoints(studentPointsSummary.totalPoints - studentSpentTotal);
 
@@ -1641,7 +1654,7 @@
                                             const jadidPages = (split.jadidPages || 0).toFixed(1);
                                             const sardRaw = formatBounds(split.sardBounds) || (session.new && split.sardPages ? session.new.raw : null);
                                             const sardPages = (split.sardPages || 0).toFixed(1);
-                                            const sessionPoints = getSessionPointsBreakdown(session, split);
+                                            const sessionPoints = getSessionPointsBreakdown(session, split, studentGroup);
 
                                             return (
                                                 <div key={idx} className="relative space-y-2">
@@ -2816,7 +2829,7 @@
                         const latestIqraaNote = getLatestIqraaNote(totalHistory);
                         const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
                         const totalNewPagesInRange = filteredEntries.reduce((acc, { idx }) => acc + (sessionSplitStats[idx]?.jadidPages || 0), 0);
-                        const studentPointsSummary = getStudentPointsSummary(filteredEntries, sessionSplitStats);
+                        const studentPointsSummary = getStudentPointsSummary(filteredEntries, sessionSplitStats, studentGroup);
                         const studentSpentTotal = getStudentSpentTotal(selectedStudent);
                         const studentNetPoints = roundPoints(studentPointsSummary.totalPoints - studentSpentTotal);
                         
@@ -2931,7 +2944,7 @@
                                                         const sessionSardPages = split.sardPages || 0;
                                                         const sessionJadidRaw = formatBounds(split.jadidBounds) || (session.new?.raw ?? '---');
                                                         const sessionSardRaw = formatBounds(split.sardBounds) || (session.new && sessionSardPages ? session.new.raw : null);
-                                                        const sessionPoints = getSessionPointsBreakdown(session, split);
+                                                        const sessionPoints = getSessionPointsBreakdown(session, split, studentGroup);
                                                         return (
                                                             <div key={idx} className="relative space-y-2">
                                                                 <div className="absolute right-[-31px] top-1.5 w-4.5 h-4.5 rounded-full bg-indigo-50 border-2 border-indigo-500 flex items-center justify-center">
