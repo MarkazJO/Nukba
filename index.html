@@ -566,11 +566,42 @@
                 )];
             };
 
-            const getStudentExpectedDaysInRange = (student) => {
-                const dateSet = new Set(OFFICIAL_RECITATION_DATES);
-                getStudentExtraDates(student).forEach(date => dateSet.add(date));
+            const getStudentExpectedDaysInRange = () => {
+                return OFFICIAL_RECITATION_DATES.filter(isDateInRange).length;
+            };
 
-                return [...dateSet].filter(date => date >= startDate && date <= endDate).length;
+            const getOfficialAttendedDaysInRange = (history = []) => {
+                return history.filter(session => {
+                    const normalizedDate = normalizeDateKey(session?.date);
+                    return (
+                        normalizedDate &&
+                        isDateInRange(normalizedDate) &&
+                        OFFICIAL_RECITATION_DATE_SET.has(normalizedDate) &&
+                        session?.attendance?.present
+                    );
+                }).length;
+            };
+
+            const getAttendancePercentageInRange = (history = []) => {
+                const attendedDays = getOfficialAttendedDaysInRange(history);
+                const expectedDays = getStudentExpectedDaysInRange();
+                if (expectedDays <= 0) return 0;
+                return Math.round((attendedDays / expectedDays) * 100);
+            };
+
+            const getRecitationPercentageInRange = (student) => {
+                const history = student?.history || [];
+                const splitStats = getSessionSplitStatsByIndex(history);
+                const totalNewPagesInRange = history.reduce((acc, session, idx) => {
+                    if (!isDateInRange(session?.date)) return acc;
+                    return acc + (splitStats[idx]?.jadidPages || 0);
+                }, 0);
+
+                const studentGroup = student?.group || student?.level || 'نخبة١';
+                const targetPages = calculateTargetPages(studentGroup, startDate, endDate);
+
+                if (targetPages <= 0) return 100;
+                return Math.min(100, Math.round((totalNewPagesInRange / targetPages) * 100));
             };
 
             const getSessionAttendanceLabel = (session) => {
@@ -986,6 +1017,12 @@
                             }, 0);
                         };
                         return getNewPagesInRange(b) - getNewPagesInRange(a);
+                    }
+                    if (sortBy === 'attendance-percent-desc') {
+                        return getAttendancePercentageInRange(b.history || []) - getAttendancePercentageInRange(a.history || []);
+                    }
+                    if (sortBy === 'recitation-percent-desc') {
+                        return getRecitationPercentageInRange(b) - getRecitationPercentageInRange(a);
                     }
                     return 0;
                 });
@@ -1481,8 +1518,8 @@
                     ? Math.min(100, Math.round((totalNewPages / targetPages) * 100)) 
                     : 100;
 
-                const attendedDays = filteredHistory.filter(session => session.attendance?.present).length;
-                const expectedDays = getStudentExpectedDaysInRange(activeStudent);
+                const attendedDays = getOfficialAttendedDaysInRange(filteredHistory);
+                const expectedDays = getStudentExpectedDaysInRange();
                 const studentWarningsTotal = WARNING_TYPES.reduce((sum, type) => {
                     return sum + (Number(activeStudent?.warnings?.[type]) || 0);
                 }, 0);
@@ -2345,6 +2382,8 @@
                                                 <option value="name-asc">الاسم (أ - ي)</option>
                                                 <option value="name-desc">الاسم (ي - أ)</option>
                                                 <option value="pages-desc">الأعلى إنجازاً بالصفحات (خلال النطاق)</option>
+                                                <option value="recitation-percent-desc">الأعلى نسبة تسميع (خلال النطاق)</option>
+                                                <option value="attendance-percent-desc">الأعلى نسبة حضور (خلال النطاق)</option>
                                             </select>
                                         </div>
 
@@ -2440,8 +2479,8 @@
                                             ? Math.min(100, Math.round((totalNewPagesInRange / targetPages) * 100)) 
                                             : 100;
 
-                                                    const attendedDays = filteredHistory.filter(session => session.attendance?.present).length;
-                                                    const expectedDays = getStudentExpectedDaysInRange(student);
+                                                    const attendedDays = getOfficialAttendedDaysInRange(filteredHistory);
+                                                    const expectedDays = getStudentExpectedDaysInRange();
 
                                                     return (
                                                         <div 
@@ -2634,8 +2673,8 @@
                                                         ? Math.min(100, Math.round((totalNewPagesInRange / targetPages) * 100)) 
                                                         : 100;
 
-                                                    const attendedDays = (student.history || []).filter(session => isDateInRange(session.date) && session.attendance?.present).length;
-                                                    const expectedDays = getStudentExpectedDaysInRange(student);
+                                                    const attendedDays = getOfficialAttendedDaysInRange(student.history || []);
+                                                    const expectedDays = getStudentExpectedDaysInRange();
 
                                                     return (
                                                         <tr 
